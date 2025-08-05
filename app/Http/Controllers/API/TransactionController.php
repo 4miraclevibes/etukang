@@ -63,7 +63,7 @@ class TransactionController extends Controller
                 $edupayResponse = $this->edupayCreatePayment(
                     $payment->payment_code,
                     $transaction->total_price,
-                    $transactionWithRelations->merchant->user->email
+                    $payment->merchant->user->email
                 );
 
                 if (!$edupayResponse) {

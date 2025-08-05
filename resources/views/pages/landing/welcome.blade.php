@@ -7,10 +7,14 @@
     <div class="px-4 py-3">
         <div class="relative">
             <input type="text"
-                   placeholder="Cari teknisi atau layanan..."
+                   id="searchInput"
+                   placeholder="Cari layanan teknisi..."
                    class="w-full px-4 py-3 bg-white rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500"
                    autocomplete="off">
             <i class="fas fa-search absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 cursor-pointer"></i>
+        </div>
+        <div id="searchResultsInfo" class="text-xs text-gray-500 mt-2 text-center">
+            Menampilkan semua layanan
         </div>
     </div>
 
@@ -22,6 +26,10 @@
                 <i class="fas fa-tools text-xl mb-1"></i>
                 <span class="text-xs">Semua</span>
             </div>
+            <div class="category-item flex-shrink-0" onclick="filterByCategory('ac')">
+                <i class="fas fa-snowflake text-xl mb-1 text-gray-600"></i>
+                <span class="text-xs text-gray-600">AC Service</span>
+            </div>
             <div class="category-item flex-shrink-0" onclick="filterByCategory('listrik')">
                 <i class="fas fa-bolt text-xl mb-1 text-gray-600"></i>
                 <span class="text-xs text-gray-600">Listrik</span>
@@ -29,10 +37,6 @@
             <div class="category-item flex-shrink-0" onclick="filterByCategory('plumbing')">
                 <i class="fas fa-wrench text-xl mb-1 text-gray-600"></i>
                 <span class="text-xs text-gray-600">Plumbing</span>
-            </div>
-            <div class="category-item flex-shrink-0" onclick="filterByCategory('ac')">
-                <i class="fas fa-snowflake text-xl mb-1 text-gray-600"></i>
-                <span class="text-xs text-gray-600">AC Service</span>
             </div>
             <div class="category-item flex-shrink-0" onclick="filterByCategory('cleaning')">
                 <i class="fas fa-broom text-xl mb-1 text-gray-600"></i>
@@ -64,23 +68,23 @@
         </div>
     </div>
 
-    <!-- Technicians Section -->
+    <!-- Products Section -->
     <div class="px-4 pb-20">
-        <h3 class="text-lg font-semibold text-gray-900 mb-3">Teknisi Tersedia</h3>
-        <div class="grid grid-cols-2 gap-3">
-            @forelse($featuredMerchants as $merchant)
-            <div class="product-card">
+        <h3 class="text-lg font-semibold text-gray-900 mb-3">Layanan Tersedia</h3>
+        <div id="productsContainer" class="grid grid-cols-2 gap-3">
+            @forelse($products as $product)
+            <div class="product-card" data-product-id="{{ $product->id }}" data-category="{{ strtolower($product->name) }}">
                 <div class="h-32 bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center">
-                    <i class="fas fa-user-cog text-4xl text-white/80"></i>
+                    <i class="fas fa-tools text-4xl text-white/80"></i>
                 </div>
                 <div class="p-3">
-                    <h4 class="font-semibold text-gray-900 text-sm mb-1">{{ Str::limit($merchant->name, 20) }}</h4>
-                    <p class="text-gray-500 text-xs mb-2">{{ Str::limit($merchant->address, 30) }}</p>
+                    <h4 class="font-semibold text-gray-900 text-sm mb-1">{{ Str::limit($product->name, 20) }}</h4>
+                    <p class="text-gray-500 text-xs mb-2">{{ Str::limit($product->description, 30) }}</p>
                     <div class="flex items-center justify-between">
                         <span class="font-bold text-green-600 text-sm">
-                            {{ $merchant->products->count() }} Layanan
+                            Rp {{ number_format($product->price, 0, ',', '.') }}
                         </span>
-                        <button onclick="showTechnicianDetails({{ $merchant->id }})"
+                        <button onclick="orderService({{ $product->id }}, '{{ $product->name }}', {{ $product->price }}, {{ $product->merchant_id }})"
                                 class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center hover:bg-green-600 transition duration-200">
                             <i class="fas fa-plus text-white text-xs"></i>
                         </button>
@@ -89,8 +93,8 @@
             </div>
             @empty
             <div class="col-span-2 text-center py-8">
-                <i class="fas fa-user-cog text-4xl text-gray-300 mb-4"></i>
-                <p class="text-gray-500">Belum ada teknisi tersedia</p>
+                <i class="fas fa-tools text-4xl text-gray-300 mb-4"></i>
+                <p class="text-gray-500">Belum ada layanan tersedia</p>
             </div>
             @endforelse
         </div>
@@ -110,27 +114,6 @@
         <div class="alert-buttons">
             <button id="alertCancelBtn" class="alert-button secondary" style="display: none;">Batal</button>
             <button id="alertConfirmBtn" class="alert-button primary">OK</button>
-        </div>
-    </div>
-</div>
-
-<!-- Technician Details Modal -->
-<div id="technicianModal" class="custom-alert">
-    <div class="alert-content" style="width: 95%; max-width: 450px; max-height: 80vh; overflow-y: auto;">
-        <div class="alert-header">
-            <div class="alert-icon warning">
-                <i class="fas fa-user-cog"></i>
-            </div>
-            <div id="technicianName" class="alert-title">Detail Teknisi</div>
-            <div id="technicianAddress" class="alert-message">Alamat teknisi</div>
-        </div>
-
-        <div id="technicianServices" class="p-4">
-            <!-- Services will be loaded here -->
-        </div>
-
-        <div class="alert-buttons">
-            <button onclick="closeTechnicianModal()" class="alert-button secondary">Tutup</button>
         </div>
     </div>
 </div>
@@ -297,13 +280,35 @@
     .category-item.active span {
         color: white;
     }
+    .product-card {
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
 </style>
 
 <script>
-    let currentTechnician = null;
+    let allProducts = [];
+    let filteredProducts = [];
     let selectedService = null;
     let selectedQuantity = 1;
     let currentPrice = 0;
+    let currentMerchantId = null;
+
+    // Load products data
+    function loadProductsData() {
+        const productCards = document.querySelectorAll('.product-card');
+        allProducts = Array.from(productCards).map(card => ({
+            id: card.dataset.productId,
+            name: card.querySelector('h4').textContent,
+            description: card.querySelector('p').textContent,
+            price: parseInt(card.querySelector('.text-green-600').textContent.replace(/[^\d]/g, '')),
+            category: card.dataset.category,
+            element: card
+        }));
+        filteredProducts = [...allProducts];
+    }
 
     // Filter by category
     function filterByCategory(category) {
@@ -323,98 +328,86 @@
         event.currentTarget.querySelector('span').classList.add('text-white');
         event.currentTarget.querySelector('span').classList.remove('text-gray-600');
 
-        // TODO: Implement filtering logic
-        showCustomAlert({
-            title: 'Filter Kategori',
-            message: `Menampilkan layanan kategori: ${category}`,
-            type: 'info'
+        // Filter products
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+
+        if (category === 'all') {
+            filteredProducts = allProducts.filter(product =>
+                product.name.toLowerCase().includes(searchTerm) ||
+                product.description.toLowerCase().includes(searchTerm)
+            );
+        } else {
+            filteredProducts = allProducts.filter(product =>
+                (product.name.toLowerCase().includes(searchTerm) ||
+                product.description.toLowerCase().includes(searchTerm)) &&
+                product.category.includes(category)
+            );
+        }
+
+        renderProducts();
+        updateSearchResults();
+    }
+
+    // Search function
+    function performSearch(searchTerm) {
+        const activeCategory = document.querySelector('.category-item.active span').textContent.toLowerCase();
+
+        if (activeCategory === 'semua') {
+            filteredProducts = allProducts.filter(product =>
+                product.name.toLowerCase().includes(searchTerm) ||
+                product.description.toLowerCase().includes(searchTerm)
+            );
+        } else {
+            const category = activeCategory.replace(' service', '').replace('cleaning', 'cleaning');
+            filteredProducts = allProducts.filter(product =>
+                (product.name.toLowerCase().includes(searchTerm) ||
+                product.description.toLowerCase().includes(searchTerm)) &&
+                product.category.includes(category)
+            );
+        }
+
+        renderProducts();
+        updateSearchResults();
+    }
+
+    // Render products
+    function renderProducts() {
+        const container = document.getElementById('productsContainer');
+        container.innerHTML = '';
+
+        if (filteredProducts.length === 0) {
+            container.innerHTML = `
+                <div class="col-span-2 text-center py-8">
+                    <i class="fas fa-search text-4xl text-gray-300 mb-4"></i>
+                    <p class="text-gray-500">Tidak ada layanan yang ditemukan</p>
+                </div>
+            `;
+            return;
+        }
+
+        filteredProducts.forEach(product => {
+            container.appendChild(product.element.cloneNode(true));
         });
     }
 
-    // Show technician details
-    async function showTechnicianDetails(technicianId) {
-        try {
-            // Gunakan endpoint yang benar sesuai dengan API routes
-            const response = await fetch(`/api/merchants/${technicianId}`, {
-                headers: {
-                    'Accept': 'application/json',
-                    'Authorization': 'Bearer {{ Auth::user() ? Auth::user()->createToken("web-token")->plainTextToken : "" }}'
-                }
-            });
-
-            if (!response.ok) {
-                // Jika response tidak OK, coba ambil data dari controller Landing
-                const fallbackResponse = await fetch(`/merchant/${technicianId}/details`);
-                if (!fallbackResponse.ok) {
-                    throw new Error('Failed to fetch technician details');
-                }
-                const fallbackData = await fallbackResponse.json();
-                currentTechnician = fallbackData.merchant;
+    // Update search results info
+    function updateSearchResults() {
+        const resultsInfo = document.getElementById('searchResultsInfo');
+        if (resultsInfo) {
+            if (filteredProducts.length === allProducts.length) {
+                resultsInfo.textContent = `Menampilkan semua layanan (${allProducts.length})`;
             } else {
-                const data = await response.json();
-                currentTechnician = data.merchant;
+                resultsInfo.textContent = `Ditemukan ${filteredProducts.length} dari ${allProducts.length} layanan`;
             }
-
-            // Update modal content
-            document.getElementById('technicianName').textContent = currentTechnician.name;
-            document.getElementById('technicianAddress').textContent = currentTechnician.address;
-
-            // Load services
-            const servicesContainer = document.getElementById('technicianServices');
-            servicesContainer.innerHTML = '';
-
-            if (currentTechnician.products && currentTechnician.products.length > 0) {
-                currentTechnician.products.forEach(product => {
-                    const serviceDiv = document.createElement('div');
-                    serviceDiv.className = 'bg-gray-50 rounded-lg p-3 mb-3';
-                    serviceDiv.innerHTML = `
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <h4 class="font-medium text-gray-900">${product.name}</h4>
-                                <p class="text-sm text-gray-500">${product.description || 'Layanan teknisi'}</p>
-                            </div>
-                            <div class="text-right">
-                                <div class="font-bold text-green-600">Rp ${numberFormat(product.price)}</div>
-                                <button onclick="orderService(${product.id}, '${product.name}', ${product.price})"
-                                        class="mt-2 bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600">
-                                    Pesan
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                    servicesContainer.appendChild(serviceDiv);
-                });
-            } else {
-                servicesContainer.innerHTML = '<p class="text-gray-500 text-center">Belum ada layanan tersedia</p>';
-            }
-
-            document.getElementById('technicianModal').classList.add('show');
-        } catch (error) {
-            console.error('Error loading technician details:', error);
-
-            // Tampilkan error yang lebih spesifik
-            let errorMessage = 'Gagal memuat detail teknisi';
-            if (error.message.includes('401')) {
-                errorMessage = 'Silakan login terlebih dahulu';
-            } else if (error.message.includes('404')) {
-                errorMessage = 'Teknisi tidak ditemukan';
-            } else if (error.message.includes('500')) {
-                errorMessage = 'Server error, silakan coba lagi';
-            }
-
-            showCustomAlert({
-                title: 'Error',
-                message: errorMessage,
-                type: 'error'
-            });
         }
     }
 
     // Order service
-    function orderService(productId, productName, price) {
+    function orderService(productId, productName, price, merchantId) {
         selectedService = { id: productId, name: productName, price: price };
         currentPrice = price;
         selectedQuantity = 1;
+        currentMerchantId = merchantId;
 
         // Update modal content
         document.getElementById('orderTitle').textContent = `Pesan: ${productName}`;
@@ -427,16 +420,11 @@
         // Update total price
         updateTotalPrice();
 
-        // Close technician modal and open order modal
-        document.getElementById('technicianModal').classList.remove('show');
+        // Open order modal
         document.getElementById('orderModal').classList.add('show');
     }
 
-    // Close modals
-    function closeTechnicianModal() {
-        document.getElementById('technicianModal').classList.remove('show');
-    }
-
+    // Close order modal
     function closeOrderModal() {
         document.getElementById('orderModal').classList.remove('show');
         selectedService = null;
@@ -490,7 +478,7 @@
                     'Authorization': 'Bearer {{ Auth::user() ? Auth::user()->createToken("web-token")->plainTextToken : "" }}'
                 },
                 body: JSON.stringify({
-                    merchant_id: currentTechnician.id,
+                    merchant_id: currentMerchantId,
                     product_id: selectedService.id,
                     quantity: selectedQuantity,
                     price: selectedService.price * selectedQuantity,
@@ -591,9 +579,35 @@
         return new Intl.NumberFormat('id-ID').format(number);
     }
 
-    // Event listeners
-    document.getElementById('quantityInput').addEventListener('input', function() {
-        selectedQuantity = parseInt(this.value) || 1;
-        updateTotalPrice();
+    // Debounce function
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+        loadProductsData();
+
+        // Search functionality
+        const searchInput = document.getElementById('searchInput');
+        const debouncedSearch = debounce(performSearch, 300);
+
+        searchInput.addEventListener('input', (e) => {
+            debouncedSearch(e.target.value.toLowerCase());
+        });
+
+        // Quantity input listener
+        document.getElementById('quantityInput').addEventListener('input', function() {
+            selectedQuantity = parseInt(this.value) || 1;
+            updateTotalPrice();
+        });
     });
 </script>
