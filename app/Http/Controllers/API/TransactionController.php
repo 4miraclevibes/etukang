@@ -1,0 +1,181 @@
+<?php
+
+namespace App\Http\Controllers\API;
+
+use App\Http\Controllers\Controller;
+use App\Models\Cart;
+use App\Models\Transaction;
+use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
+use App\Models\TransactionDetail;
+use App\Models\Payment;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
+
+class TransactionController extends Controller
+{
+    public function store(Request $request): JsonResponse
+    {
+        $carts = Cart::where('user_id', Auth::user()->id)->where('status', 'active')->get();
+
+        if ($carts->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Keranjang tidak ditemukan',
+            ], 404);
+        }
+
+        return DB::transaction(function () use ($carts) {
+            // Update status cart menjadi inactive
+            $carts->update([
+                'status' => 'inactive'
+            ]);
+
+            // Kelompokkan cart berdasarkan merchant_id
+            $cartsByMerchant = $carts->groupBy('merchant_id');
+
+            $transactions = [];
+
+            foreach ($cartsByMerchant as $merchantId => $merchantCarts) {
+                // Buat transaksi untuk setiap merchant
+                $transaction = Transaction::create([
+                    'user_id' => Auth::user()->id,
+                    'merchant_id' => $merchantId,
+                    'total_price' => $merchantCarts->sum('price'),
+                    'status' => 'pending'
+                ]);
+
+                $payment = Payment::create([
+                    'transaction_id' => $transaction->id,
+                    'user_id' => Auth::user()->id,
+                    'merchant_id' => $merchantId,
+                    'payment_code' => 'EDUPAY-'.rand(100000, 999999),
+                    'payment_method' => 'cash',
+                    'payment_status' => 'pending',
+                ]);
+
+                // Hit EduPay API untuk semua payment method
+                // Load transaction dengan merchant dan user relationship
+                $transactionWithRelations = $transaction->load(['merchant.user']);
+
+                $edupayResponse = $this->edupayCreatePayment(
+                    $payment->payment_code,
+                    $transaction->total_price,
+                    $transactionWithRelations->merchant->user->email
+                );
+
+                if (!$edupayResponse) {
+                    // Jika EduPay API gagal, rollback database transaction
+                    throw new \Exception('Gagal membuat payment di EduPay');
+                }
+
+                // Buat transaction detail untuk setiap cart dalam merchant ini
+                foreach ($merchantCarts as $cart) {
+                    TransactionDetail::create([
+                        'transaction_id' => $transaction->id,
+                        'cart_id' => $cart->id,
+                        'product_id' => $cart->product_id,
+                        'quantity' => $cart->quantity,
+                        'price' => $cart->price,
+                        'status' => 'pending'
+                    ]);
+                }
+
+                $transactions[] = $transaction->load('transactionDetail', 'payment');
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Transaksi berhasil dibuat',
+                'data' => $transactions
+            ], 201);
+        });
+    }
+
+    public function update(Request $request, $id)
+    {
+        $transaction = Transaction::where('user_id', Auth::user()->id)->with('transactionDetail', 'payment')->find($id);
+        $payment = Payment::where('transaction_id', $id)->first();
+        if (!$transaction) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Transaksi tidak ditemukan',
+            ], 404);
+        }
+
+        $transaction->update([
+            'status' => $request->status,
+        ]);
+        $payment->update([
+            'payment_status' => $request->status,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Transaksi berhasil diupdate',
+            'data' => $transaction->load('transactionDetail', 'payment')
+        ], 200);
+    }
+
+    public function destroy($id)
+    {
+        $transaction = Transaction::where('user_id', Auth::user()->id)->with('transactionDetail', 'payment')->find($id);
+        $transaction->update([
+            'status' => 'cancelled'
+        ]);
+        $transaction->transactionDetail->update([
+            'status' => 'cancelled'
+        ]);
+        $transaction->payment->update([
+            'payment_status' => 'cancelled'
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Transaksi berhasil dibatalkan',
+        ], 200);
+    }
+
+    private function edupayCreatePayment($code, $total, $email)
+    {
+        try {
+            $response = Http::post('https://edupay.justputoff.com/api/service/storePayment', [
+                'service_id' => 1, // Service ID untuk edepot
+                'total' => $total,
+                'code' => $code,
+                'email' => $email,
+            ]);
+
+            if ($response->successful()) {
+                return $response->json();
+            } else {
+                Log::error('EduPay API Error', [
+                    'status' => $response->status(),
+                    'response' => $response->json(),
+                    'request' => [
+                        'service_id' => 1,
+                        'total' => $total,
+                        'code' => $code,
+                        'email' => $email,
+                    ]
+                ]);
+
+                return null;
+            }
+        } catch (\Exception $e) {
+            Log::error('EduPay API Exception', [
+                'message' => $e->getMessage(),
+                'request' => [
+                    'service_id' => 11,
+                    'total' => $total,
+                    'code' => $code,
+                    'email' => $email,
+                ]
+            ]);
+
+            return null;
+        }
+    }
+}
