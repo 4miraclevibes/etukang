@@ -54,6 +54,7 @@ class TransactionController extends Controller
                     'payment_code' => 'EDUPAY-'.rand(100000, 999999),
                     'payment_method' => 'cash',
                     'payment_status' => 'pending',
+                    'total_price' => $merchantCarts->sum('price'),
                 ]);
 
                 // Hit EduPay API untuk semua payment method
@@ -62,7 +63,7 @@ class TransactionController extends Controller
 
                 $edupayResponse = $this->edupayCreatePayment(
                     $payment->payment_code,
-                    $transaction->total_price,
+                    $payment->total_price,
                     $payment->merchant->user->email
                 );
 

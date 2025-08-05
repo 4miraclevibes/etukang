@@ -13,6 +13,7 @@ class Payment extends Model
         'payment_method',
         'payment_status',
         'payment_code',
+        'total_price',
     ];
 
     public function transaction()

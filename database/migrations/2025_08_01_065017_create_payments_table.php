@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('payment_method');
             $table->string('payment_status')->default('pending');
             $table->string('payment_code');
+            $table->decimal('total_price', 10, 2);
             $table->timestamps();
         });
     }
