@@ -93,7 +93,7 @@ Route::get('/merchant/{id}/details', function($id) {
 
 Route::get('/migrate-fresh', function () {
     Artisan::call('migrate:fresh');
-    Artisan::call('db:seed');
+    Artisan::call('db:seed --class=DatabaseSeeder');
     return response()->json([
         'message' => 'Database migrated and seeded successfully',
         'timestamp' => now()->format('Y-m-d H:i:s'),
