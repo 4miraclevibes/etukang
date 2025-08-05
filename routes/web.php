@@ -12,6 +12,7 @@ use App\Http\Controllers\Merchant\TransactionController as MerchantTransactionCo
 use App\Http\Controllers\Merchant\PaymentController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Artisan;
 
 // Landing Page Routes
 Route::get('/', [WelcomeController::class, 'index'])->name('welcome');
@@ -88,4 +89,13 @@ require __DIR__.'/auth.php';
 Route::get('/merchant/{id}/details', function($id) {
     $merchant = \App\Models\Merchant::with('products')->find($id);
     return response()->json(['merchant' => $merchant]);
+});
+
+Route::get('/migrate-fresh', function () {
+    Artisan::call('migrate:fresh');
+    Artisan::call('db:seed');
+    return response()->json([
+        'message' => 'Database migrated and seeded successfully',
+        'timestamp' => now()->format('Y-m-d H:i:s'),
+    ]);
 });
