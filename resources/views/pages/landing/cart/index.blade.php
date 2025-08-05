@@ -244,13 +244,15 @@
         document.getElementById('customAlert').classList.remove('show');
     }
 
-    // Cart Functions - Perbaikan endpoint
+    // Cart Functions - Perbaikan endpoint dan realtime update
     function updateQuantity(cartId, change) {
-        const newQuantity = parseInt(document.querySelector(`[data-cart-id="${cartId}"] .quantity-display`).textContent) + change;
+        const cartItem = document.querySelector(`[data-cart-id="${cartId}"]`);
+        const quantityDisplay = cartItem.querySelector('.quantity-display');
+        const newQuantity = parseInt(quantityDisplay.textContent) + change;
 
         if (newQuantity < 1) return;
 
-        fetch(`/api/carts/${cartId}`, {  // Perbaikan: dari /api/cart/ menjadi /api/carts/
+        fetch(`/api/carts/${cartId}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -267,9 +269,15 @@
         })
         .then(data => {
             if (data.success || data.message) {
-                sessionStorage.setItem('cartMessage', 'Quantity berhasil diperbarui');
-                sessionStorage.setItem('cartMessageType', 'success');
-                location.reload();
+                // Update UI tanpa reload
+                updateCartItemUI(cartId, data.data);
+                updateCartSummary();
+
+                showCustomAlert({
+                    title: 'Berhasil!',
+                    message: 'Quantity berhasil diperbarui',
+                    type: 'success'
+                });
             } else {
                 showCustomAlert({
                     title: 'Error',
@@ -296,7 +304,7 @@
             confirmText: 'Ya, Hapus',
             cancelText: 'Batal',
             onConfirm: () => {
-                fetch(`/api/carts/${cartId}`, {  // Perbaikan: dari /api/cart/ menjadi /api/carts/
+                fetch(`/api/carts/${cartId}`, {
                     method: 'DELETE',
                     headers: {
                         'Accept': 'application/json',
@@ -311,9 +319,22 @@
                 })
                 .then(data => {
                     if (data.success) {
-                        sessionStorage.setItem('cartMessage', 'Item berhasil dihapus dari keranjang');
-                        sessionStorage.setItem('cartMessageType', 'success');
-                        location.reload();
+                        // Remove item dari UI tanpa reload
+                        const cartItem = document.querySelector(`[data-cart-id="${cartId}"]`);
+                        cartItem.remove();
+                        updateCartSummary();
+
+                        // Check if cart is empty
+                        const remainingItems = document.querySelectorAll('.cart-item');
+                        if (remainingItems.length === 0) {
+                            showEmptyCart();
+                        }
+
+                        showCustomAlert({
+                            title: 'Berhasil!',
+                            message: 'Item berhasil dihapus dari keranjang',
+                            type: 'success'
+                        });
                     } else {
                         showCustomAlert({
                             title: 'Error',
@@ -342,7 +363,7 @@
             confirmText: 'Ya, Kosongkan',
             cancelText: 'Batal',
             onConfirm: () => {
-                fetch('/api/carts', {  // Perbaikan: dari /api/cart menjadi /api/carts
+                fetch('/api/carts', {
                     method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json',
@@ -357,9 +378,16 @@
                     return response.json();
                 })
                 .then(data => {
-                    sessionStorage.setItem('cartMessage', 'Keranjang berhasil dikosongkan');
-                    sessionStorage.setItem('cartMessageType', 'success');
-                    location.reload();
+                    // Clear cart UI tanpa reload
+                    const cartItems = document.querySelectorAll('.cart-item');
+                    cartItems.forEach(item => item.remove());
+                    showEmptyCart();
+
+                    showCustomAlert({
+                        title: 'Berhasil!',
+                        message: 'Keranjang berhasil dikosongkan',
+                        type: 'success'
+                    });
                 })
                 .catch(error => {
                     console.error('Error:', error);
@@ -371,6 +399,89 @@
                 });
             }
         });
+    }
+
+    // Helper functions untuk update UI
+    function updateCartItemUI(cartId, cartData) {
+        const cartItem = document.querySelector(`[data-cart-id="${cartId}"]`);
+        if (!cartItem || !cartData) return;
+
+        // Update quantity display
+        const quantityDisplay = cartItem.querySelector('.quantity-display');
+        quantityDisplay.textContent = cartData.quantity;
+
+        // Update price displays
+        const pricePerHour = cartItem.querySelector('.text-gray-900:contains("Rp")');
+        if (pricePerHour) {
+            pricePerHour.textContent = `Rp ${formatNumber(cartData.price_per_hour)}`;
+        }
+
+        const totalPrice = cartItem.querySelector('.text-green-600');
+        if (totalPrice) {
+            totalPrice.textContent = `Rp ${formatNumber(cartData.price)}`;
+        }
+
+        // Update total price di bagian kanan
+        const rightTotal = cartItem.querySelector('.text-right .text-green-600');
+        if (rightTotal) {
+            rightTotal.textContent = `Rp ${formatNumber(cartData.price)}`;
+        }
+
+        // Update minus button disabled state
+        const minusBtn = cartItem.querySelector('.quantity-btn');
+        if (minusBtn) {
+            minusBtn.disabled = cartData.quantity <= 1;
+        }
+    }
+
+    function updateCartSummary() {
+        const cartItems = document.querySelectorAll('.cart-item');
+        const totalItems = cartItems.length;
+        const totalQuantity = Array.from(cartItems).reduce((sum, item) => {
+            return sum + parseInt(item.querySelector('.quantity-display').textContent);
+        }, 0);
+        const totalPrice = Array.from(cartItems).reduce((sum, item) => {
+            const priceText = item.querySelector('.text-right .text-green-600').textContent;
+            const price = parseInt(priceText.replace(/[^\d]/g, ''));
+            return sum + price;
+        }, 0);
+
+        // Update summary
+        const summaryItems = document.querySelectorAll('.space-y-2 .flex.justify-between');
+        if (summaryItems.length >= 3) {
+            summaryItems[0].querySelector('.font-medium').textContent = totalItems;
+            summaryItems[1].querySelector('.font-medium').textContent = `${totalQuantity} jam`;
+            summaryItems[2].querySelector('.font-medium').textContent = `Rp ${formatNumber(totalPrice)}`;
+            summaryItems[3].querySelector('.text-green-600').textContent = `Rp ${formatNumber(totalPrice)}`;
+        }
+
+        // Update header count
+        const headerCount = document.querySelector('.text-sm.text-gray-500');
+        if (headerCount) {
+            headerCount.textContent = `${totalItems} item`;
+        }
+    }
+
+    function showEmptyCart() {
+        const cartContent = document.querySelector('.px-4.py-6.pb-20');
+        cartContent.innerHTML = `
+            <div class="text-center py-12">
+                <div class="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-shopping-cart text-gray-400 text-3xl"></i>
+                </div>
+                <h3 class="text-xl font-semibold text-gray-900 mb-2">Keranjang Kosong</h3>
+                <p class="text-gray-500 mb-6">Belum ada item pesanan di keranjang Anda</p>
+                <a href="{{ route('welcome') }}"
+                   class="bg-green-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-600 transition-colors inline-flex items-center">
+                    <i class="fas fa-tools mr-2"></i>
+                    Cari Teknisi
+                </a>
+            </div>
+        `;
+    }
+
+    function formatNumber(num) {
+        return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
     }
 
     function proceedToCheckout() {
@@ -505,7 +616,8 @@
         .then(data => {
             hideCustomAlert();
 
-            if (data.message && data.transactions) {
+            // Perbaikan: cek response yang benar
+            if (data.success && data.message) {
                 showCheckoutSuccess(data);
             } else {
                 showCustomAlert({
@@ -540,17 +652,17 @@
         modal.className = 'custom-alert show';
 
         let transactionsHtml = '';
-        if (data.transactions && data.transactions.length > 0) {
-            transactionsHtml = data.transactions.map(transaction => `
+        if (data.data && data.data.length > 0) {
+            transactionsHtml = data.data.map(transaction => `
                 <div class="bg-gray-50 rounded-lg p-3 mb-3">
                     <div class="flex items-center justify-between mb-2">
-                        <span class="font-medium text-gray-900">${transaction.merchant.name}</span>
+                        <span class="font-medium text-gray-900">${transaction.merchant?.name || 'N/A'}</span>
                         <span class="text-sm ${getStatusClass(transaction.status)}">${getStatusText(transaction.status)}</span>
                     </div>
                     <div class="text-sm text-gray-600">
-                        <div>Layanan: ${transaction.transaction_details[0]?.product?.name || 'N/A'}</div>
-                        <div>Total: ${transaction.payment.formatted_total}</div>
-                        ${transaction.payment ? `<div>Payment: ${transaction.payment.code}</div>` : ''}
+                        <div>Layanan: ${transaction.transaction_detail?.[0]?.product?.name || 'N/A'}</div>
+                        <div>Total: Rp ${formatNumber(transaction.total_price)}</div>
+                        ${transaction.payment ? `<div>Payment: ${transaction.payment.payment_code}</div>` : ''}
                     </div>
                 </div>
             `).join('');
@@ -573,8 +685,8 @@
 
                     <div class="bg-green-50 rounded-lg p-3 mt-3">
                         <div class="text-sm text-green-800">
-                            <div class="font-medium mb-1">Total Transaksi: ${data.total_transactions || 0}</div>
-                            <div>Total Pembayaran: ${data.payment_info?.total_amount || 'Rp 0'}</div>
+                            <div class="font-medium mb-1">Total Transaksi: ${data.data?.length || 0}</div>
+                            <div>Total Pembayaran: Rp ${formatNumber(data.data?.reduce((sum, t) => sum + t.total_price, 0) || 0)}</div>
                         </div>
                     </div>
                 </div>

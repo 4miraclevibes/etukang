@@ -48,22 +48,22 @@
     <!-- Statistics -->
     <div class="px-4 mb-4">
         <h3 class="text-lg font-semibold text-gray-900 mb-3">Statistik Layanan</h3>
-        <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-2 gap-4">
             <div class="text-center p-3 bg-white rounded-lg shadow-sm">
                 <div class="text-2xl font-bold text-green-500">{{ $stats['total_technicians'] ?? 0 }}</div>
-                <div class="text-sm text-gray-600">Teknisi Aktif</div>
-            </div>
+                    <div class="text-sm text-gray-600">Teknisi Aktif</div>
+                </div>
             <div class="text-center p-3 bg-white rounded-lg shadow-sm">
                 <div class="text-2xl font-bold text-green-500">{{ $stats['total_services'] ?? 1500 }}</div>
-                <div class="text-sm text-gray-600">Layanan Tersedia</div>
-            </div>
+                    <div class="text-sm text-gray-600">Layanan Tersedia</div>
+                </div>
             <div class="text-center p-3 bg-white rounded-lg shadow-sm">
                 <div class="text-2xl font-bold text-green-500">{{ number_format($stats['total_customers'] ?? 5000) }}</div>
-                <div class="text-sm text-gray-600">Pelanggan Puas</div>
-            </div>
+                    <div class="text-sm text-gray-600">Pelanggan Puas</div>
+                </div>
             <div class="text-center p-3 bg-white rounded-lg shadow-sm">
                 <div class="text-2xl font-bold text-green-500">{{ $stats['satisfaction_rate'] ?? 98 }}%</div>
-                <div class="text-sm text-gray-600">Kepuasan</div>
+                    <div class="text-sm text-gray-600">Kepuasan</div>
             </div>
         </div>
     </div>
@@ -76,29 +76,29 @@
             <div class="product-card" data-product-id="{{ $product->id }}" data-category="{{ strtolower($product->name) }}">
                 <div class="h-32 bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center">
                     <i class="fas fa-tools text-4xl text-white/80"></i>
-                </div>
+                        </div>
                 <div class="p-3">
                     <h4 class="font-semibold text-gray-900 text-sm mb-1">{{ Str::limit($product->name, 20) }}</h4>
                     <p class="text-gray-500 text-xs mb-2">{{ Str::limit($product->description, 30) }}</p>
-                    <div class="flex items-center justify-between">
+                            <div class="flex items-center justify-between">
                         <span class="font-bold text-green-600 text-sm">
                             Rp {{ number_format($product->price, 0, ',', '.') }}
-                        </span>
+                                </span>
                         <button onclick="orderService({{ $product->id }}, '{{ $product->name }}', {{ $product->price }}, {{ $product->merchant_id }})"
                                 class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center hover:bg-green-600 transition duration-200">
                             <i class="fas fa-plus text-white text-xs"></i>
-                        </button>
+                                </button>
+                    </div>
                     </div>
                 </div>
-            </div>
             @empty
             <div class="col-span-2 text-center py-8">
                 <i class="fas fa-tools text-4xl text-gray-300 mb-4"></i>
                 <p class="text-gray-500">Belum ada layanan tersedia</p>
-            </div>
+                        </div>
             @endforelse
-        </div>
-    </div>
+                                </div>
+                            </div>
 @endsection
 
 <!-- Custom Alert Modal -->
@@ -110,13 +110,13 @@
             </div>
             <div id="alertTitle" class="alert-title"></div>
             <div id="alertMessage" class="alert-message"></div>
-        </div>
+                            </div>
         <div class="alert-buttons">
             <button id="alertCancelBtn" class="alert-button secondary" style="display: none;">Batal</button>
             <button id="alertConfirmBtn" class="alert-button primary">OK</button>
-        </div>
-    </div>
-</div>
+                        </div>
+                    </div>
+                </div>
 
 <!-- Order Modal -->
 <div id="orderModal" class="custom-alert">
@@ -124,10 +124,10 @@
         <div class="alert-header">
             <div class="alert-icon warning">
                 <i class="fas fa-shopping-cart"></i>
-            </div>
+                        </div>
             <div id="orderTitle" class="alert-title">Pesan Layanan</div>
             <div id="orderMessage" class="alert-message">Pilih layanan dan jumlah quantity</div>
-        </div>
+                                </div>
 
         <form id="orderForm" class="p-4 space-y-4">
             <div>
@@ -135,7 +135,7 @@
                 <select id="serviceSelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
                     <option value="">Pilih layanan...</option>
                 </select>
-            </div>
+                            </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Jumlah Quantity</label>
                 <div class="flex items-center space-x-2">
@@ -146,9 +146,9 @@
                            class="w-16 text-center px-2 py-1 border border-gray-300 rounded">
                     <button type="button" onclick="increaseQuantity()" class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
                         <i class="fas fa-plus text-xs"></i>
-                    </button>
-                </div>
-            </div>
+                                </button>
+                            </div>
+                        </div>
             <div class="bg-gray-50 rounded-lg p-3">
                 <div class="flex justify-between items-center">
                     <span class="text-sm text-gray-600">Total Harga:</span>

@@ -6,21 +6,11 @@
     <title>@yield('title', 'Etukang - Pesan Teknisi ke Rumah')</title>
     <meta name="description" content="Pesan teknisi profesional untuk perbaikan dan pemeliharaan rumah Anda. Layanan elektrik, plumbing, AC, dan cleaning.">
 
-    <!-- PWA Meta Tags -->
-    <meta name="theme-color" content="#10B981">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="Etukang">
-
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-    <link rel="manifest" href="/manifest.json">
-    <link rel="icon" type="image/svg+xml" href="/icons/icon.svg">
-    <link rel="apple-touch-icon" href="/icons/icon.svg">
 
     <style>
         body {
@@ -285,37 +275,16 @@
 </head>
 <body class="bg-gray-50">
     <div class="mobile-container">
-        @include('layouts.landing.navbar')
+    @include('layouts.landing.navbar')
 
-        <!-- Main Content -->
+    <!-- Main Content -->
         <main>
-            @yield('content')
-        </main>
+        @yield('content')
+    </main>
     </div>
 
     <!-- Footer di luar mobile container -->
     @include('layouts.landing.footer')
-
-    <!-- Install Prompt -->
-    <div id="installPrompt" class="hidden fixed bottom-20 left-1/2 transform -translate-x-1/2 bg-white rounded-lg shadow-lg p-4 max-w-sm mx-4 z-50">
-        <div class="flex items-center mb-3">
-            <div class="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center mr-3">
-                <i class="fas fa-tools text-white"></i>
-            </div>
-            <div>
-                <h4 class="font-semibold">Install Etukang</h4>
-                <p class="text-sm text-gray-600">Akses lebih cepat dari home screen</p>
-            </div>
-        </div>
-        <div class="flex space-x-2">
-            <button id="installBtn" class="flex-1 bg-green-500 text-white py-2 rounded-lg text-sm font-medium">
-                Install
-            </button>
-            <button id="dismissBtn" class="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg text-sm">
-                Nanti
-            </button>
-        </div>
-    </div>
 
     <!-- Custom Alert Modal -->
     <div id="customAlert" class="custom-alert">
@@ -337,35 +306,6 @@
     @stack('scripts')
 
     <script>
-        // Install Prompt Logic
-        let deferredPrompt;
-
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-
-            setTimeout(() => {
-                const installPrompt = document.getElementById('installPrompt');
-                installPrompt.classList.remove('hidden');
-            }, 3000);
-        });
-
-        document.getElementById('installBtn').addEventListener('click', async () => {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') {
-                    console.log('App installed successfully');
-                }
-                deferredPrompt = null;
-            }
-            document.getElementById('installPrompt').classList.add('hidden');
-        });
-
-        document.getElementById('dismissBtn').addEventListener('click', () => {
-            document.getElementById('installPrompt').classList.add('hidden');
-        });
-
         // Custom Alert Functions
         function showCustomAlert(options) {
             const {
@@ -460,17 +400,6 @@
                 onCancel: onCancel
             });
         };
-
-        // Service Worker Registration
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function() {
-                navigator.serviceWorker.register('/service-worker.js').then(function(registration) {
-                    console.log('ServiceWorker registration successful with scope: ', registration.scope);
-                }, function(err) {
-                    console.log('ServiceWorker registration failed: ', err);
-                });
-            });
-        }
     </script>
 </body>
 </html>

@@ -123,15 +123,30 @@ class TransactionController extends Controller
     public function destroy($id)
     {
         $transaction = Transaction::where('user_id', Auth::user()->id)->with('transactionDetail', 'payment')->find($id);
+
+        if (!$transaction) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Transaksi tidak ditemukan',
+            ], 404);
+        }
+
+        // Update transaction status
         $transaction->update([
             'status' => 'cancelled'
         ]);
-        $transaction->transactionDetail->update([
-            'status' => 'cancelled'
-        ]);
-        $transaction->payment->update([
-            'payment_status' => 'cancelled'
-        ]);
+
+        // Update transaction details - PERBAIKAN: pakai each() bukan update() collection
+        $transaction->transactionDetail->each(function($detail) {
+            $detail->update(['status' => 'cancelled']);
+        });
+
+        // Update payment status
+        if ($transaction->payment) {
+            $transaction->payment->update([
+                'payment_status' => 'cancelled'
+            ]);
+        }
 
         return response()->json([
             'success' => true,
