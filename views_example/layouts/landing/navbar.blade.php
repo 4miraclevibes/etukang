@@ -1,7 +1,7 @@
 <!-- Status Bar -->
 <div class="status-bar">
     <span>Sportlodek</span>
-    <span>9:41</span>
+            <span id="currentTime">--:--</span>
 </div>
 
 <!-- App Header -->

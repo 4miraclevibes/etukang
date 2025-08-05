@@ -2,7 +2,7 @@
 <nav class="bg-white shadow-sm border-b border-gray-100">
     <!-- Status Bar (Mobile) -->
     <div class="bg-gray-800 text-white text-xs px-4 py-1 flex justify-between items-center">
-        <span>9:41</span>
+        <span id="currentTime">--:--</span>
         <div class="flex items-center space-x-1">
             <div class="w-4 h-2 bg-white rounded-sm"></div>
             <div class="w-4 h-2 bg-white rounded-sm"></div>
@@ -64,5 +64,29 @@
         if (!menu.contains(event.target) && !button) {
             menu.classList.add('hidden');
         }
+    });
+
+    // Real-time Clock Function
+    function updateClock() {
+        const now = new Date();
+        const hours = now.getHours().toString().padStart(2, '0');
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+        const timeString = `${hours}:${minutes}`;
+
+        const timeElement = document.getElementById('currentTime');
+        if (timeElement) {
+            timeElement.textContent = timeString;
+        }
+    }
+
+    // Update clock every second
+    function startClock() {
+        updateClock(); // Update immediately
+        setInterval(updateClock, 1000); // Update every second
+    }
+
+    // Start clock when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        startClock();
     });
 </script>

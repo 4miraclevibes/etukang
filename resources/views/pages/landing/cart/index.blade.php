@@ -44,12 +44,12 @@
                                     <span class="font-medium text-gray-900">{{ $cart->product->name }}</span>
                                 </div>
                                 <div>
-                                    <span class="text-gray-500">Durasi:</span>
-                                    <span class="font-medium text-gray-900">{{ $cart->quantity }} jam</span>
+                                    <span class="text-gray-500">Jumlah:</span>
+                                    <span class="font-medium text-gray-900">{{ $cart->quantity }} service</span>
                                 </div>
                                 <div>
-                                    <span class="text-gray-500">Harga/Jam:</span>
-                                    <span class="font-medium text-gray-900">Rp {{ number_format($cart->price_per_hour, 0, ',', '.') }}</span>
+                                    <span class="text-gray-500">Harga/Service:</span>
+                                    <span class="font-medium text-gray-900">Rp {{ number_format($cart->product->price, 0, ',', '.') }}</span>
                                 </div>
                                 <div>
                                     <span class="text-gray-500">Total:</span>
@@ -91,8 +91,8 @@
                         <span class="font-medium">{{ $carts->count() }}</span>
                     </div>
                     <div class="flex justify-between">
-                        <span class="text-gray-500">Total Jam:</span>
-                        <span class="font-medium">{{ $carts->sum('quantity') }} jam</span>
+                        <span class="text-gray-500">Total Service:</span>
+                        <span class="font-medium">{{ $carts->sum('quantity') }} service</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-gray-500">Subtotal:</span>
@@ -267,18 +267,22 @@
             }
             return response.json();
         })
-        .then(data => {
-            if (data.success || data.message) {
-                // Update UI tanpa reload
-                updateCartItemUI(cartId, data.data);
-                updateCartSummary();
+                .then(data => {
+            // Cek apakah response berhasil
+            if (data.success) {
+                // Update UI tanpa reload jika ada data
+                if (data.data) {
+                    updateCartItemUI(cartId, data.data);
+                    updateCartSummary();
+                }
 
                 showCustomAlert({
                     title: 'Berhasil!',
-                    message: 'Quantity berhasil diperbarui',
+                    message: data.message || 'Quantity berhasil diperbarui',
                     type: 'success'
                 });
             } else {
+                // Jika tidak berhasil, tampilkan pesan error
                 showCustomAlert({
                     title: 'Error',
                     message: data.message || 'Gagal mengupdate quantity',
@@ -404,28 +408,37 @@
     // Helper functions untuk update UI
     function updateCartItemUI(cartId, cartData) {
         const cartItem = document.querySelector(`[data-cart-id="${cartId}"]`);
-        if (!cartItem || !cartData) return;
+        if (!cartItem || !cartData) {
+            return;
+        }
 
         // Update quantity display
         const quantityDisplay = cartItem.querySelector('.quantity-display');
-        quantityDisplay.textContent = cartData.quantity;
-
-        // Update price displays
-        const pricePerHour = cartItem.querySelector('.text-gray-900:contains("Rp")');
-        if (pricePerHour) {
-            pricePerHour.textContent = `Rp ${formatNumber(cartData.price_per_hour)}`;
+        if (quantityDisplay) {
+            quantityDisplay.textContent = cartData.quantity;
         }
 
-        const totalPrice = cartItem.querySelector('.text-green-600');
-        if (totalPrice) {
-            totalPrice.textContent = `Rp ${formatNumber(cartData.price)}`;
-        }
+        // Update price per service (cari berdasarkan text content)
+        const priceElements = cartItem.querySelectorAll('.text-gray-900');
+        priceElements.forEach(element => {
+            if (element.textContent.includes('Rp') && element.textContent.includes('service')) {
+                element.textContent = `Rp ${formatNumber(cartData.product?.price || 0)}`;
+            }
+        });
 
         // Update total price di bagian kanan
         const rightTotal = cartItem.querySelector('.text-right .text-green-600');
         if (rightTotal) {
             rightTotal.textContent = `Rp ${formatNumber(cartData.price)}`;
         }
+
+        // Update total price di service details
+        const serviceDetails = cartItem.querySelectorAll('.text-green-600');
+        serviceDetails.forEach(element => {
+            if (element.textContent.includes('Rp') && !element.closest('.text-right')) {
+                element.textContent = `Rp ${formatNumber(cartData.price)}`;
+            }
+        });
 
         // Update minus button disabled state
         const minusBtn = cartItem.querySelector('.quantity-btn');
@@ -437,20 +450,30 @@
     function updateCartSummary() {
         const cartItems = document.querySelectorAll('.cart-item');
         const totalItems = cartItems.length;
-        const totalQuantity = Array.from(cartItems).reduce((sum, item) => {
-            return sum + parseInt(item.querySelector('.quantity-display').textContent);
-        }, 0);
-        const totalPrice = Array.from(cartItems).reduce((sum, item) => {
-            const priceText = item.querySelector('.text-right .text-green-600').textContent;
-            const price = parseInt(priceText.replace(/[^\d]/g, ''));
-            return sum + price;
-        }, 0);
+
+        let totalQuantity = 0;
+        let totalPrice = 0;
+
+        cartItems.forEach(item => {
+            const quantityDisplay = item.querySelector('.quantity-display');
+            const priceElement = item.querySelector('.text-right .text-green-600');
+
+            if (quantityDisplay) {
+                totalQuantity += parseInt(quantityDisplay.textContent) || 0;
+            }
+
+            if (priceElement) {
+                const priceText = priceElement.textContent;
+                const price = parseInt(priceText.replace(/[^\d]/g, '')) || 0;
+                totalPrice += price;
+            }
+        });
 
         // Update summary
         const summaryItems = document.querySelectorAll('.space-y-2 .flex.justify-between');
-        if (summaryItems.length >= 3) {
+        if (summaryItems.length >= 4) {
             summaryItems[0].querySelector('.font-medium').textContent = totalItems;
-            summaryItems[1].querySelector('.font-medium').textContent = `${totalQuantity} jam`;
+            summaryItems[1].querySelector('.font-medium').textContent = `${totalQuantity} service`;
             summaryItems[2].querySelector('.font-medium').textContent = `Rp ${formatNumber(totalPrice)}`;
             summaryItems[3].querySelector('.text-green-600').textContent = `Rp ${formatNumber(totalPrice)}`;
         }

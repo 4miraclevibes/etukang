@@ -99,21 +99,59 @@
             </div>
 
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                <h3 class="font-semibold text-gray-900 mb-4">Merchant</h3>
+                <div class="space-y-3">
+                    @if(Auth::user()->merchant)
+                        <a href="{{ route('merchant.dashboard') }}"
+                           class="w-full flex items-center justify-between py-3 text-left">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mr-3">
+                                    <i class="fas fa-store text-green-600"></i>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-gray-900">Dashboard Merchant</p>
+                                    <p class="text-sm text-gray-500">Kelola {{ Auth::user()->merchant->name }}</p>
+                                </div>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </a>
+                    @else
+                        <button onclick="showMerchantRegistration()"
+                                class="w-full flex items-center justify-between py-3 text-left">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center mr-3">
+                                    <i class="fas fa-store text-orange-600"></i>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-gray-900">Daftar Sebagai Merchant</p>
+                                    <p class="text-sm text-gray-500">Kelola service Anda</p>
+                                </div>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </button>
+                    @endif
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
                 <h3 class="font-semibold text-gray-900 mb-4">Akun</h3>
                 <div class="space-y-3">
-                    <button onclick="logout()"
-                            class="w-full flex items-center justify-between py-3 text-left">
-                        <div class="flex items-center">
-                            <div class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center mr-3">
-                                <i class="fas fa-sign-out-alt text-red-600"></i>
+                    <form method="POST" action="{{ route('logout') }}" class="w-full">
+                        @csrf
+                        <button type="submit"
+                                class="w-full flex items-center justify-between py-3 text-left">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center mr-3">
+                                    <i class="fas fa-sign-out-alt text-red-600"></i>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-red-600">Logout</p>
+                                    <p class="text-sm text-gray-500">Keluar dari aplikasi</p>
+                                </div>
                             </div>
-                            <div>
-                                <p class="font-medium text-red-600">Logout</p>
-                                <p class="text-sm text-gray-500">Keluar dari aplikasi</p>
-                            </div>
-                        </div>
-                        <i class="fas fa-chevron-right text-gray-400"></i>
-                    </button>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -202,6 +240,51 @@
         <div class="alert-buttons">
             <button onclick="closeChangePasswordModal()" class="alert-button secondary">Batal</button>
             <button onclick="savePassword()" class="alert-button primary">Simpan</button>
+        </div>
+    </div>
+</div>
+
+<!-- Merchant Registration Modal -->
+<div id="merchantRegistrationModal" class="custom-alert">
+    <div class="alert-content" style="width: 95%; max-width: 450px; max-height: 80vh; overflow-y: auto;">
+        <div class="alert-header">
+            <div class="alert-icon warning">
+                <i class="fas fa-store"></i>
+            </div>
+            <div class="alert-title">Daftar Sebagai Merchant</div>
+            <div class="alert-message">Isi informasi merchant Anda</div>
+        </div>
+
+                <form id="merchantRegistrationForm" class="p-4 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Nama Tempat</label>
+                <input type="text" id="merchantName" name="name" placeholder="Contoh: Service Center Jakarta"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Alamat</label>
+                <textarea id="merchantAddress" name="address" rows="3" placeholder="Alamat lengkap tempat service"
+                          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"></textarea>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Nomor Telepon</label>
+                <input type="tel" id="merchantPhone" name="phone" placeholder="Contoh: 021-1234567"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <select id="merchantStatus" name="status"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                    <option value="active">Aktif</option>
+                    <option value="inactive">Tidak Aktif</option>
+                    <option value="pending">Pending</option>
+                </select>
+            </div>
+        </form>
+
+        <div class="alert-buttons">
+            <button onclick="closeMerchantRegistrationModal()" class="alert-button secondary">Batal</button>
+            <button onclick="saveMerchantRegistration()" class="alert-button primary">Daftar Merchant</button>
         </div>
     </div>
 </div>
@@ -527,33 +610,94 @@
         });
     }
 
-    function logout() {
-        showCustomAlert({
-            title: 'Logout',
-            message: 'Apakah Anda yakin ingin keluar?',
-            type: 'warning',
-            confirmText: 'Ya, Logout',
-            cancelText: 'Batal',
-            onConfirm: () => {
-                fetch('/api/logout', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'Authorization': 'Bearer {{ Auth::user() ? Auth::user()->createToken("web-token")->plainTextToken : "" }}'
+    // Merchant Registration Functions
+    function showMerchantRegistration() {
+        // Cek apakah user sudah memiliki merchant
+        @if(Auth::user()->merchant)
+            showCustomAlert({
+                title: 'Info',
+                message: 'Anda sudah terdaftar sebagai merchant',
+                type: 'info'
+            });
+            return;
+        @endif
+
+        document.getElementById('merchantRegistrationModal').classList.add('show');
+    }
+
+    function closeMerchantRegistrationModal() {
+        document.getElementById('merchantRegistrationModal').classList.remove('show');
+        document.getElementById('merchantRegistrationForm').reset();
+    }
+
+    function saveMerchantRegistration() {
+        const name = document.getElementById('merchantName').value;
+        const address = document.getElementById('merchantAddress').value;
+        const phone = document.getElementById('merchantPhone').value;
+        const status = document.getElementById('merchantStatus').value;
+
+        if (!name || !address || !phone || !status) {
+            showCustomAlert({
+                title: 'Error',
+                message: 'Semua field harus diisi',
+                type: 'error'
+            });
+            return;
+        }
+
+        fetch('/api/merchants', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Authorization': 'Bearer {{ Auth::user() ? Auth::user()->createToken("web-token")->plainTextToken : "" }}'
+            },
+            body: JSON.stringify({
+                name: name,
+                address: address,
+                phone: phone,
+                status: status
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            closeMerchantRegistrationModal();
+
+            if (data.success) {
+                showCustomAlert({
+                    title: 'Berhasil!',
+                    message: data.message || 'Merchant berhasil didaftarkan. Anda sekarang dapat mengakses dashboard merchant.',
+                    type: 'success',
+                    onConfirm: () => {
+                        // Redirect ke merchant dashboard setelah 1 detik
+                        setTimeout(() => {
+                            window.location.href = '{{ route("merchant.dashboard") }}';
+                        }, 1000);
                     }
-                })
-                .then(() => {
-                    window.location.href = '{{ route("login") }}';
-                })
-                .catch(error => {
-                    showCustomAlert({
-                        title: 'Error',
-                        message: 'Gagal logout: ' + error.message,
-                        type: 'error'
-                    });
+                });
+            } else {
+                showCustomAlert({
+                    title: 'Error',
+                    message: data.message || 'Gagal mendaftar merchant',
+                    type: 'error'
                 });
             }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            closeMerchantRegistrationModal();
+            showCustomAlert({
+                title: 'Error',
+                message: 'Terjadi kesalahan saat mendaftar merchant',
+                type: 'error'
+            });
         });
     }
+
+
 </script>

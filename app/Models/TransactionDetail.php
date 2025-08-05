@@ -29,5 +29,4 @@ class TransactionDetail extends Model
     {
         return $this->belongsTo(Cart::class);
     }
-
 }

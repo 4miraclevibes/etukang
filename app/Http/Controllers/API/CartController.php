@@ -48,7 +48,7 @@ class CartController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Keranjang berhasil dibuat',
-            'data' => $cart
+            'data' => $cart->load(['product', 'merchant'])
         ], 201);
     }
 
@@ -81,10 +81,13 @@ class CartController extends Controller
             'price' => $cart->product->price * $request->quantity,
         ]);
 
+        // Refresh cart data dari database
+        $cart->refresh();
+
         return response()->json([
             'success' => true,
             'message' => 'Keranjang berhasil diubah',
-            'data' => $cart
+            'data' => $cart->load(['product', 'merchant'])
         ], 200);
     }
 
@@ -107,7 +110,7 @@ class CartController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Keranjang berhasil dihapus',
-            'data' => $cart
+            'data' => $cart->load(['product', 'merchant'])
         ], 200);
     }
 }

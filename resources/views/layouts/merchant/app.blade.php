@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'Etukang - Pesan Teknisi ke Rumah')</title>
-    <meta name="description" content="Pesan teknisi profesional untuk perbaikan dan pemeliharaan rumah Anda. Layanan elektrik, plumbing, AC, dan cleaning.">
+    <title>@yield('title', 'Etukang Merchant')</title>
+    <meta name="description" content="Panel merchant Etukang - Kelola service dan transaksi">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -13,7 +13,7 @@
     <meta name="theme-color" content="#10B981">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="Etukang">
+    <meta name="apple-mobile-web-app-title" content="Etukang Merchant">
 
     <!-- PWA Links -->
     <link rel="icon" type="image/svg+xml" href="/icons/icon.svg">
@@ -42,33 +42,6 @@
             align-items: center;
             justify-content: space-between;
             padding: 0 16px;
-        }
-        .install-banner {
-            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
-            color: white;
-            padding: 12px 16px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            font-size: 14px;
-        }
-        .category-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 12px 8px;
-            border-radius: 12px;
-            transition: all 0.2s;
-        }
-        .category-item.active {
-            background: #10B981;
-            color: white;
-        }
-        .product-card {
-            background: white;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
         .bottom-nav {
             position: fixed;
@@ -126,61 +99,6 @@
             max-height: 90%;
             overflow-y: auto;
             margin: 20px;
-        }
-        .hour-slot {
-            display: inline-block;
-            padding: 8px 12px;
-            margin: 4px;
-            border-radius: 8px;
-            font-size: 12px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .hour-slot.available {
-            background: #10B981;
-            color: white;
-        }
-        .hour-slot.booked {
-            background: #ef4444;
-            color: white;
-            cursor: not-allowed;
-        }
-        .hour-slot.selected {
-            background: #059669;
-            color: white;
-            transform: scale(1.05);
-        }
-        .hour-slot:not(.available):not(.booked) {
-            display: none;
-        }
-        .availability-modal {
-            animation: slideUp 0.3s ease-out;
-        }
-
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .availability-modal .modal-content {
-            animation: scaleIn 0.3s ease-out;
-        }
-
-        @keyframes scaleIn {
-            from {
-                opacity: 0;
-                transform: scale(0.9);
-            }
-            to {
-                opacity: 1;
-                transform: scale(1);
-            }
         }
 
         /* Custom Alert Styles */
@@ -286,16 +204,89 @@
 </head>
 <body class="bg-gray-50">
     <div class="mobile-container">
-    @include('layouts.landing.navbar')
+        <!-- Mobile-First Navbar -->
+        <nav class="bg-white shadow-sm border-b border-gray-100">
+            <!-- Status Bar (Mobile) -->
+            <div class="bg-gray-800 text-white text-xs px-4 py-1 flex justify-between items-center">
+                <span id="currentTime">--:--</span>
+                <div class="flex items-center space-x-1">
+                    <div class="w-4 h-2 bg-white rounded-sm"></div>
+                    <div class="w-4 h-2 bg-white rounded-sm"></div>
+                    <div class="w-4 h-2 bg-white rounded-sm"></div>
+                </div>
+            </div>
 
-    <!-- Main Content -->
-        <main>
-        @yield('content')
-    </main>
+            <!-- Main Navbar -->
+            <div class="px-4 py-3 flex items-center justify-between">
+                <!-- Logo -->
+                <div class="flex items-center">
+                    <i class="fas fa-store text-green-500 text-xl mr-2"></i>
+                    <span class="font-bold text-lg text-gray-900">Etukang Merchant</span>
+                </div>
+
+                <!-- User Menu -->
+                @auth
+                    <div class="relative">
+                        <button onclick="toggleUserMenu()" class="flex items-center space-x-2 text-gray-700 hover:text-green-500 transition-colors">
+                            <span class="text-sm font-medium">{{ Auth::user()->name }}</span>
+                            <i class="fas fa-chevron-down text-xs"></i>
+                        </button>
+
+                        <!-- User Dropdown -->
+                        <div id="userMenu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                            <div class="py-2">
+                                <a href="{{ route('merchant.profile') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    <i class="fas fa-user mr-2"></i>Profil Merchant
+                                </a>
+                                <form method="POST" action="{{ route('logout') }}" class="block">
+                                    @csrf
+                                    <button type="submit" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
+                                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                @else
+                    <div class="flex items-center space-x-3">
+                        <a href="{{ route('login') }}" class="text-sm text-gray-700 hover:text-green-500">Masuk</a>
+                        <a href="{{ route('register') }}" class="bg-green-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-600 transition-colors">Daftar</a>
+                    </div>
+                @endauth
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="pb-20">
+            @yield('content')
+        </main>
     </div>
 
-    <!-- Footer di luar mobile container -->
-    @include('layouts.landing.footer')
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav">
+        <div class="grid grid-cols-5">
+            <a href="{{ route('merchant.dashboard') }}" class="nav-item {{ request()->routeIs('merchant.dashboard') ? 'active' : '' }}">
+                <i class="fas fa-chart-line"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="{{ route('merchant.products') }}" class="nav-item {{ request()->routeIs('merchant.products*') ? 'active' : '' }}">
+                <i class="fas fa-tools"></i>
+                <span>Service</span>
+            </a>
+            <a href="{{ route('merchant.transactions') }}" class="nav-item {{ request()->routeIs('merchant.transactions*') ? 'active' : '' }}">
+                <i class="fas fa-receipt"></i>
+                <span>Transaksi</span>
+            </a>
+            <a href="{{ route('merchant.payments') }}" class="nav-item {{ request()->routeIs('merchant.payments*') ? 'active' : '' }}">
+                <i class="fas fa-credit-card"></i>
+                <span>Bayar</span>
+            </a>
+            <a href="{{ route('merchant.profile') }}" class="nav-item {{ request()->routeIs('merchant.profile*') ? 'active' : '' }}">
+                <i class="fas fa-user"></i>
+                <span>Profil</span>
+            </a>
+        </div>
+    </div>
 
     <!-- Custom Alert Modal -->
     <div id="customAlert" class="custom-alert">
@@ -317,6 +308,21 @@
     @stack('scripts')
 
     <script>
+        function toggleUserMenu() {
+            const menu = document.getElementById('userMenu');
+            menu.classList.toggle('hidden');
+        }
+
+        // Close menu when clicking outside
+        document.addEventListener('click', function(event) {
+            const menu = document.getElementById('userMenu');
+            const button = event.target.closest('button');
+
+            if (!menu.contains(event.target) && !button) {
+                menu.classList.add('hidden');
+            }
+        });
+
         // Custom Alert Functions
         function showCustomAlert(options) {
             const {
@@ -411,6 +417,30 @@
                 onCancel: onCancel
             });
         };
+
+        // Real-time Clock Function
+        function updateClock() {
+            const now = new Date();
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const timeString = `${hours}:${minutes}`;
+
+            const timeElement = document.getElementById('currentTime');
+            if (timeElement) {
+                timeElement.textContent = timeString;
+            }
+        }
+
+        // Update clock every second
+        function startClock() {
+            updateClock(); // Update immediately
+            setInterval(updateClock, 1000); // Update every second
+        }
+
+        // Start clock when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            startClock();
+        });
 
         // PWA Install Functions
         let deferredPrompt;

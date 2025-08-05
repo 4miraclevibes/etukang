@@ -1,0 +1,22 @@
+{
+    "name": "Etukang - Pesan Teknisi ke Rumah",
+    "short_name": "Etukang",
+    "description": "Pesan teknisi profesional untuk perbaikan dan pemeliharaan rumah Anda. Layanan elektrik, plumbing, AC, dan cleaning.",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#10B981",
+    "theme_color": "#10B981",
+    "orientation": "portrait",
+    "scope": "/",
+    "icons": [
+        {
+            "src": "/icons/icon.svg",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
+        }
+    ],
+    "categories": ["business", "productivity", "utilities"],
+    "lang": "id",
+    "dir": "ltr"
+} 

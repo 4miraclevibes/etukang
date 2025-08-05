@@ -11,12 +11,23 @@ use Illuminate\Support\Facades\Auth;
 
 class MerchantController extends Controller
 {
+    public function index(): JsonResponse
+    {
+        $merchants = Merchant::all();
+
+        return response()->json([
+            'success' => true,
+            'data' => $merchants
+        ], 200);
+    }
+
     public function store(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'phone' => 'required|string|email|max:255|unique:merchants',
-            'address' => 'required|string|min:8|confirmed',
+            'phone' => 'required|string|max:255',
+            'address' => 'required|string|min:8',
+            'status' => 'required|in:active,inactive,pending',
         ]);
 
         if ($validator->fails()) {
@@ -28,11 +39,20 @@ class MerchantController extends Controller
             ], 422);
         }
 
+        // Cek apakah user sudah memiliki merchant
+        if (Auth::user()->merchant) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda sudah terdaftar sebagai merchant',
+            ], 422);
+        }
+
         $merchant = Merchant::create([
             'user_id' => Auth::user()->id,
             'name' => $request->name,
             'phone' => $request->phone,
             'address' => $request->address,
+            'status' => $request->status,
         ]);
 
         return response()->json([
@@ -46,8 +66,9 @@ class MerchantController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'phone' => 'required|string|email|max:255|unique:merchants',
-            'address' => 'required|string|min:8|confirmed',
+            'phone' => 'required|string|max:255',
+            'address' => 'required|string|min:8',
+            'status' => 'required|in:active,inactive,pending',
         ]);
 
         if ($validator->fails()) {
@@ -72,6 +93,7 @@ class MerchantController extends Controller
             'name' => $request->name,
             'phone' => $request->phone,
             'address' => $request->address,
+            'status' => $request->status,
         ]);
 
         return response()->json([
