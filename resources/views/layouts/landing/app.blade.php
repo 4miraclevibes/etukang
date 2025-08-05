@@ -100,6 +100,29 @@
         .nav-item.active {
             color: #10B981;
         }
+
+        /* PWA Install Button Animations */
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideOutDown {
+            from {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+        }
         .nav-item i {
             font-size: 20px;
             margin-bottom: 4px;
@@ -420,21 +443,28 @@
             e.preventDefault();
             // Stash the event so it can be triggered later
             deferredPrompt = e;
-            // Show the install button
-            showInstallButton();
+            // Show the install button after a short delay
+            setTimeout(() => {
+                showInstallButton();
+            }, 2000);
         });
 
         function showInstallButton() {
             const installButton = document.getElementById('pwaInstallButton');
-            if (installButton) {
+            if (installButton && deferredPrompt) {
                 installButton.classList.remove('hidden');
+                // Add animation
+                installButton.style.animation = 'slideInUp 0.3s ease-out';
             }
         }
 
         function hideInstallButton() {
             const installButton = document.getElementById('pwaInstallButton');
             if (installButton) {
-                installButton.classList.add('hidden');
+                installButton.style.animation = 'slideOutDown 0.3s ease-out';
+                setTimeout(() => {
+                    installButton.classList.add('hidden');
+                }, 300);
             }
         }
 
@@ -446,9 +476,19 @@
                 deferredPrompt.userChoice.then((choiceResult) => {
                     if (choiceResult.outcome === 'accepted') {
                         console.log('User accepted the install prompt');
+                        showCustomAlert({
+                            title: 'Berhasil!',
+                            message: 'Aplikasi berhasil diinstall. Anda dapat mengakses aplikasi dari home screen.',
+                            type: 'success'
+                        });
                         hideInstallButton();
                     } else {
                         console.log('User dismissed the install prompt');
+                        showCustomAlert({
+                            title: 'Info',
+                            message: 'Anda dapat menginstall aplikasi nanti dari menu browser.',
+                            type: 'info'
+                        });
                     }
                     deferredPrompt = null;
                 });
@@ -475,8 +515,8 @@
         }
     </script>
 
-    <!-- PWA Install Button -->
-    <div id="pwaInstallButton" class="fixed bottom-20 left-4 z-50 hidden">
+        <!-- PWA Install Button -->
+    <div id="pwaInstallButton" class="fixed bottom-24 left-4 z-50 hidden">
         <button onclick="installPWA()"
                 class="bg-green-500 hover:bg-green-600 text-white px-4 py-3 rounded-full shadow-lg flex items-center space-x-2 transition-all duration-300 transform hover:scale-105">
             <i class="fab fa-android text-xl"></i>
