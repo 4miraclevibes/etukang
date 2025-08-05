@@ -16,6 +16,10 @@ Route::get('/user', function (Request $request) {
 // EDUPAY API - Public routes (tidak perlu authentication)
 Route::post('payment-notification/{code}', [EdupayController::class, 'paymentNotification']);
 
+// Auth routes - Public (tidak perlu authentication)
+Route::post('login', [UserController::class, 'login']);
+Route::post('register', [UserController::class, 'register']);
+
 Route::middleware('auth:sanctum')->group(function () {
     //Carts
     Route::get('carts', [CartController::class, 'index']);
@@ -40,14 +44,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('products/{id}', [ProductController::class, 'update']);
     Route::delete('products/{id}', [ProductController::class, 'destroy']);
 
-    //Profile
+    //Profile - Perlu authentication
     Route::get('profile', [UserController::class, 'profile']);
     Route::put('profile', [UserController::class, 'updateProfile']);
     Route::put('profile/password', [UserController::class, 'changePassword']);
 
-    //Auth
-    Route::post('login', [UserController::class, 'login']);
-    Route::post('register', [UserController::class, 'register']);
+    //Auth - Perlu authentication
     Route::post('logout', [UserController::class, 'logout']);
     Route::post('refresh-token', [UserController::class, 'refreshToken']);
 });

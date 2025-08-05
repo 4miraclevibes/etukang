@@ -28,10 +28,10 @@ class TransactionController extends Controller
         }
 
         return DB::transaction(function () use ($carts) {
-            // Update status cart menjadi inactive
-            $carts->update([
-                'status' => 'inactive'
-            ]);
+            // Update status cart menjadi inactive - PERBAIKAN
+            $carts->each(function($cart) {
+                $cart->update(['status' => 'inactive']);
+            });
 
             // Kelompokkan cart berdasarkan merchant_id
             $cartsByMerchant = $carts->groupBy('merchant_id');

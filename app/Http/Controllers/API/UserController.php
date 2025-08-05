@@ -172,18 +172,17 @@ class UserController extends Controller
 
         try {
             $user = Auth::user();
-            $user->update([
-                'name' => $request->name,
-                'email' => $request->email,
-            ]);
+            $user->name = $request->name;
+            $user->email = $request->email;
+            $user->save();
 
-        return response()->json([
+            return response()->json([
                 'success' => true,
-            'message' => 'Profile berhasil diperbarui',
-            'data' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
+                'message' => 'Profile berhasil diperbarui',
+                'data' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
                 ]
             ]);
         } catch (\Exception $e) {
@@ -211,18 +210,17 @@ class UserController extends Controller
 
         // Definisikan rules validasi
         $rules = [
-            'current_password' => 'required|string',
-            'password' => 'required|string|min:8|confirmed',
+            'old_password' => 'required|string',
+            'new_password' => 'required|string|min:8',
         ];
 
         // Custom pesan error per field
         $messages = [
-            'current_password.required' => 'Password saat ini wajib diisi.',
-            'current_password.string' => 'Password saat ini harus berupa teks.',
-            'password.required' => 'Password baru wajib diisi.',
-            'password.string' => 'Password baru harus berupa teks.',
-            'password.min' => 'Password baru minimal 8 karakter.',
-            'password.confirmed' => 'Konfirmasi password tidak cocok.',
+            'old_password.required' => 'Password lama wajib diisi.',
+            'old_password.string' => 'Password lama harus berupa teks.',
+            'new_password.required' => 'Password baru wajib diisi.',
+            'new_password.string' => 'Password baru harus berupa teks.',
+            'new_password.min' => 'Password baru minimal 8 karakter.',
         ];
 
         // Jalankan validasi manual
@@ -240,22 +238,21 @@ class UserController extends Controller
         try {
             $user = Auth::user();
 
-        if (!Hash::check($request->current_password, $user->password)) {
-            return response()->json([
+            if (!Hash::check($request->old_password, $user->password)) {
+                return response()->json([
                     'success' => false,
-                    'message' => 'Password saat ini tidak sesuai',
-                    'error' => 'INVALID_CURRENT_PASSWORD'
-            ], 400);
-        }
+                    'message' => 'Password lama tidak sesuai',
+                    'error' => 'INVALID_OLD_PASSWORD'
+                ], 400);
+            }
 
-        $user->update([
-            'password' => Hash::make($request->password)
-        ]);
+            $user->password = Hash::make($request->new_password);
+            $user->save();
 
-        return response()->json([
+            return response()->json([
                 'success' => true,
-            'message' => 'Password berhasil diubah'
-        ]);
+                'message' => 'Password berhasil diubah'
+            ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
