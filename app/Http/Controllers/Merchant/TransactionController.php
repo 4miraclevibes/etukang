@@ -19,7 +19,7 @@ class TransactionController extends Controller
         }
 
         $query = Transaction::where('merchant_id', $merchant->id)
-            ->with(['user', 'merchant', 'transactionDetails.product', 'payment']);
+            ->with(['user', 'merchant', 'transactionDetail.product', 'payment']);
 
         // Filter by status
         if ($request->has('status') && $request->status !== '') {
@@ -59,7 +59,7 @@ class TransactionController extends Controller
             ], 404);
         }
 
-        $transaction->load(['user', 'merchant', 'transactionDetails.product', 'payment']);
+        $transaction->load(['user', 'merchant', 'transactionDetail.product', 'payment']);
 
         return response()->json([
             'data' => $transaction

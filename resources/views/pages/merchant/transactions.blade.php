@@ -61,10 +61,10 @@
                     </span>
                 </div>
             </div>
-            
+
             <div class="mb-3">
                 <p class="text-sm text-gray-600">Service:</p>
-                @forelse($transaction->transactionDetails as $detail)
+                @forelse($transaction->transactionDetail as $detail)
                     <p class="text-sm text-gray-900">{{ $detail->product->name ?? 'Service tidak ditemukan' }} ({{ $detail->quantity }}x)</p>
                 @empty
                     <p class="text-sm text-gray-500">Tidak ada detail</p>
@@ -130,11 +130,11 @@
                 <h3 id="confirmTitle" class="text-lg font-semibold text-gray-900 mb-2">Konfirmasi</h3>
                 <p id="confirmMessage" class="text-sm text-gray-600 mb-6">Apakah Anda yakin ingin melakukan aksi ini?</p>
                 <div class="flex justify-center space-x-3">
-                    <button id="confirmCancel" onclick="closeConfirmModal()" 
+                    <button id="confirmCancel" onclick="closeConfirmModal()"
                         class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors">
                         Batal
                     </button>
-                    <button id="confirmAction" 
+                    <button id="confirmAction"
                         class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
                         Ya, Lanjutkan
                     </button>
@@ -179,7 +179,7 @@ function viewTransaction(transactionId) {
                     <div>
                         <p class="text-sm font-medium text-gray-500">Detail Service</p>
                         <div class="mt-2">
-                            ${transaction.transaction_details && transaction.transaction_details.length > 0 
+                            ${transaction.transaction_details && transaction.transaction_details.length > 0
                                 ? transaction.transaction_details.map(detail => `
                                     <div class="text-sm text-gray-900">
                                         ${detail.product ? detail.product.name : 'Service tidak ditemukan'} - ${detail.quantity}x - Rp ${new Intl.NumberFormat('id-ID').format(detail.product ? detail.product.price : 0)}
@@ -233,7 +233,7 @@ function updateTransactionStatus(transactionId, newStatus) {
         'completed': 'menyelesaikan',
         'cancelled': 'membatalkan'
     };
-    
+
     showConfirmModal(
         'Update Status Transaksi',
         `Apakah Anda yakin ingin ${statusText[newStatus]} transaksi ini?`,

@@ -36,7 +36,7 @@ class DashboardController extends Controller
 
         // Get recent transactions
         $recentTransactions = Transaction::where('merchant_id', $merchant->id)
-            ->with(['user', 'merchant', 'transactionDetails.product', 'payment'])
+            ->with(['user', 'merchant', 'transactionDetail.product', 'payment'])
             ->orderBy('created_at', 'desc')
             ->limit(5)
             ->get();
