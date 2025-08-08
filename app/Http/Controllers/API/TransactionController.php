@@ -84,7 +84,7 @@ class TransactionController extends Controller
                     ]);
                 }
 
-                $transactions[] = $transaction->load('transactionDetails', 'payment');
+                $transactions[] = $transaction->load('transactionDetail', 'payment');
             }
 
             return response()->json([
@@ -97,7 +97,7 @@ class TransactionController extends Controller
 
     public function update(Request $request, $id)
     {
-        $transaction = Transaction::where('user_id', Auth::user()->id)->with('transactionDetails', 'payment')->find($id);
+        $transaction = Transaction::where('user_id', Auth::user()->id)->with('transactionDetail', 'payment')->find($id);
         $payment = Payment::where('transaction_id', $id)->first();
         if (!$transaction) {
             return response()->json([
@@ -116,13 +116,13 @@ class TransactionController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Transaksi berhasil diupdate',
-            'data' => $transaction->load('transactionDetails', 'payment')
+            'data' => $transaction->load('transactionDetail', 'payment')
         ], 200);
     }
 
     public function destroy($id)
     {
-        $transaction = Transaction::where('user_id', Auth::user()->id)->with('transactionDetails', 'payment')->find($id);
+        $transaction = Transaction::where('user_id', Auth::user()->id)->with('transactionDetail', 'payment')->find($id);
 
         if (!$transaction) {
             return response()->json([
@@ -137,7 +137,7 @@ class TransactionController extends Controller
         ]);
 
         // Update transaction details - PERBAIKAN: pakai each() bukan update() collection
-        $transaction->transactionDetails->each(function($detail) {
+        $transaction->transactionDetail->each(function($detail) {
             $detail->update(['status' => 'cancelled']);
         });
 
