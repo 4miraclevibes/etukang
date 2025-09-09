@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
 use App\Models\Product;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller
 {
@@ -17,6 +18,7 @@ class ProductController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'required|string|max:255',
             'price' => 'required|numeric',
+            'sertifikasi' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
         ]);
 
         if ($validator->fails()) {
@@ -28,11 +30,19 @@ class ProductController extends Controller
             ], 422);
         }
 
+        // Handle file upload
+        $sertifikasiPath = null;
+        if ($request->hasFile('sertifikasi')) {
+            $file = $request->file('sertifikasi');
+            $sertifikasiPath = $file->store('sertifikasi', 'public');
+        }
+
         $product = Product::create([
             'merchant_id' => Auth::user()->id,
             'name' => $request->name,
             'description' => $request->description,
             'price' => $request->price,
+            'sertifikasi' => $sertifikasiPath,
         ]);
 
         return response()->json([
@@ -48,6 +58,7 @@ class ProductController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'required|string|max:255',
             'price' => 'required|numeric',
+            'sertifikasi' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
         ]);
 
         if ($validator->fails()) {
@@ -68,11 +79,25 @@ class ProductController extends Controller
             ], 404);
         }
 
-        $product->update([
+        // Handle file upload
+        $updateData = [
             'name' => $request->name,
             'description' => $request->description,
             'price' => $request->price,
-        ]);
+        ];
+
+        if ($request->hasFile('sertifikasi')) {
+            // Delete old file if exists
+            if ($product->sertifikasi) {
+                Storage::disk('public')->delete($product->sertifikasi);
+            }
+
+            $file = $request->file('sertifikasi');
+            $sertifikasiPath = $file->store('sertifikasi', 'public');
+            $updateData['sertifikasi'] = $sertifikasiPath;
+        }
+
+        $product->update($updateData);
 
         return response()->json([
             'success' => true,

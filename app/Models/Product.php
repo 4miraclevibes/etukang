@@ -12,6 +12,9 @@ class Product extends Model
         'description',
         'price',
         'status',
+        'image',
+        'sertifikasi',
+        'ulasan',
     ];
 
     public function merchant()

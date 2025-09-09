@@ -7,6 +7,7 @@ use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller
 {
@@ -44,6 +45,7 @@ class ProductController extends Controller
             'description' => 'nullable|string|max:1000',
             'price' => 'required|integer|min:0',
             'status' => 'nullable|in:active,inactive',
+            'sertifikasi' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
         ], [
             'name.required' => 'Nama service wajib diisi.',
             'name.string' => 'Nama service harus berupa teks.',
@@ -54,6 +56,9 @@ class ProductController extends Controller
             'price.integer' => 'Harga harus berupa angka.',
             'price.min' => 'Harga minimal 0.',
             'status.in' => 'Status harus active atau inactive.',
+            'sertifikasi.file' => 'File sertifikasi harus berupa file.',
+            'sertifikasi.mimes' => 'File sertifikasi harus berupa JPG, PNG, atau PDF.',
+            'sertifikasi.max' => 'File sertifikasi maksimal 5MB.',
         ]);
 
         if ($validator->fails()) {
@@ -63,12 +68,20 @@ class ProductController extends Controller
             ], 422);
         }
 
+        // Handle file upload
+        $sertifikasiPath = null;
+        if ($request->hasFile('sertifikasi')) {
+            $file = $request->file('sertifikasi');
+            $sertifikasiPath = $file->store('sertifikasi', 'public');
+        }
+
         $product = Product::create([
             'merchant_id' => $merchant->id,
             'name' => $request->name,
             'description' => $request->description,
             'price' => $request->price,
             'status' => $request->status ?? 'active',
+            'sertifikasi' => $sertifikasiPath,
         ]);
 
         return response()->json([
@@ -104,6 +117,7 @@ class ProductController extends Controller
             'description' => 'nullable|string|max:1000',
             'price' => 'required|integer|min:0',
             'status' => 'nullable|in:active,inactive',
+            'sertifikasi' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
         ], [
             'name.required' => 'Nama service wajib diisi.',
             'name.string' => 'Nama service harus berupa teks.',
@@ -114,6 +128,9 @@ class ProductController extends Controller
             'price.integer' => 'Harga harus berupa angka.',
             'price.min' => 'Harga minimal 0.',
             'status.in' => 'Status harus active atau inactive.',
+            'sertifikasi.file' => 'File sertifikasi harus berupa file.',
+            'sertifikasi.mimes' => 'File sertifikasi harus berupa JPG, PNG, atau PDF.',
+            'sertifikasi.max' => 'File sertifikasi maksimal 5MB.',
         ]);
 
         if ($validator->fails()) {
@@ -123,12 +140,26 @@ class ProductController extends Controller
             ], 422);
         }
 
-        $product->update([
+        // Handle file upload
+        $updateData = [
             'name' => $request->name,
             'description' => $request->description,
             'price' => $request->price,
             'status' => $request->status ?? $product->status,
-        ]);
+        ];
+
+        if ($request->hasFile('sertifikasi')) {
+            // Delete old file if exists
+            if ($product->sertifikasi) {
+                Storage::disk('public')->delete($product->sertifikasi);
+            }
+
+            $file = $request->file('sertifikasi');
+            $sertifikasiPath = $file->store('sertifikasi', 'public');
+            $updateData['sertifikasi'] = $sertifikasiPath;
+        }
+
+        $product->update($updateData);
 
         return response()->json([
             'message' => 'Service berhasil diperbarui',
