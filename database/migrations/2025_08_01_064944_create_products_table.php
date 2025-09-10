@@ -20,7 +20,6 @@ return new class extends Migration
             $table->string('status')->default('active');
             $table->string('image')->nullable();
             $table->string('sertifikasi')->nullable();
-            $table->string('ulasan')->default(0);
             $table->timestamps();
         });
     }

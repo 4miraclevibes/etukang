@@ -80,7 +80,19 @@
                 <div class="p-3">
                     <h4 class="font-semibold text-gray-900 text-sm mb-1">{{ Str::limit($product->name, 20) }}</h4>
                     <p class="text-gray-500 text-xs mb-2">{{ Str::limit($product->description, 30) }}</p>
-                            <div class="flex items-center justify-between">
+
+                    <!-- Sertifikasi Button -->
+                    @if($product->sertifikasi)
+                    <div class="mb-2">
+                        <button onclick="viewCertification('{{ $product->sertifikasi }}', '{{ $product->name }}')"
+                                class="w-full py-1 px-2 bg-blue-50 text-blue-600 text-xs rounded-lg hover:bg-blue-100 transition duration-200 flex items-center justify-center space-x-1">
+                            <i class="fas fa-certificate text-xs"></i>
+                            <span>Lihat Sertifikasi</span>
+                        </button>
+                    </div>
+                    @endif
+
+                    <div class="flex items-center justify-between">
                         <span class="font-bold text-green-600 text-sm">
                             Rp {{ number_format($product->price, 0, ',', '.') }}
                                 </span>
@@ -160,6 +172,32 @@
         <div class="alert-buttons">
             <button onclick="closeOrderModal()" class="alert-button secondary">Batal</button>
             <button onclick="addToCart()" class="alert-button primary">Tambah ke Keranjang</button>
+        </div>
+    </div>
+</div>
+
+<!-- Certification Modal -->
+<div id="certificationModal" class="custom-alert">
+    <div class="alert-content" style="width: 95%; max-width: 500px;">
+        <div class="alert-header">
+            <div class="alert-icon warning">
+                <i class="fas fa-certificate"></i>
+            </div>
+            <div id="certificationTitle" class="alert-title">Sertifikasi Layanan</div>
+            <div id="certificationMessage" class="alert-message">Dokumen sertifikasi untuk layanan ini</div>
+        </div>
+
+        <div class="p-4">
+            <div id="certificationContent" class="text-center">
+                <!-- Certification content will be loaded here -->
+            </div>
+        </div>
+
+        <div class="alert-buttons">
+            <button onclick="closeCertificationModal()" class="alert-button secondary">Tutup</button>
+            <button id="downloadCertBtn" onclick="downloadCertification()" class="alert-button primary" style="display: none;">
+                <i class="fas fa-download mr-1"></i>Download
+            </button>
         </div>
     </div>
 </div>
@@ -295,6 +333,7 @@
     let selectedQuantity = 1;
     let currentPrice = 0;
     let currentMerchantId = null;
+    let currentCertification = null;
 
     // Load products data
     function loadProductsData() {
@@ -572,6 +611,78 @@
 
     function hideCustomAlert() {
         document.getElementById('customAlert').classList.remove('show');
+    }
+
+    // View certification
+    function viewCertification(certificationPath, serviceName) {
+        currentCertification = certificationPath;
+
+        // Update modal title
+        document.getElementById('certificationTitle').textContent = `Sertifikasi: ${serviceName}`;
+        document.getElementById('certificationMessage').textContent = 'Dokumen sertifikasi untuk layanan ini';
+
+        // Get file extension
+        const fileExtension = certificationPath.split('.').pop().toLowerCase();
+        const certificationContent = document.getElementById('certificationContent');
+        const downloadBtn = document.getElementById('downloadCertBtn');
+
+        if (fileExtension === 'pdf') {
+            // Show PDF viewer
+            certificationContent.innerHTML = `
+                <div class="bg-gray-100 rounded-lg p-4 mb-4">
+                    <iframe src="/storage/${certificationPath}"
+                            width="100%"
+                            height="300"
+                            style="border: none; border-radius: 8px;">
+                    </iframe>
+                </div>
+                <p class="text-sm text-gray-600">Dokumen PDF - Klik download untuk menyimpan</p>
+            `;
+            downloadBtn.style.display = 'block';
+        } else if (['jpg', 'jpeg', 'png'].includes(fileExtension)) {
+            // Show image viewer
+            certificationContent.innerHTML = `
+                <div class="bg-gray-100 rounded-lg p-4 mb-4">
+                    <img src="/storage/${certificationPath}"
+                         alt="Sertifikasi"
+                         class="max-w-full h-auto rounded-lg shadow-sm"
+                         style="max-height: 300px;">
+                </div>
+                <p class="text-sm text-gray-600">Dokumen Gambar - Klik download untuk menyimpan</p>
+            `;
+            downloadBtn.style.display = 'block';
+        } else {
+            // Unsupported format
+            certificationContent.innerHTML = `
+                <div class="text-center py-8">
+                    <i class="fas fa-file text-4xl text-gray-300 mb-4"></i>
+                    <p class="text-gray-500">Format file tidak didukung untuk preview</p>
+                    <p class="text-sm text-gray-400 mt-2">Klik download untuk melihat file</p>
+                </div>
+            `;
+            downloadBtn.style.display = 'block';
+        }
+
+        // Show modal
+        document.getElementById('certificationModal').classList.add('show');
+    }
+
+    // Close certification modal
+    function closeCertificationModal() {
+        document.getElementById('certificationModal').classList.remove('show');
+        currentCertification = null;
+    }
+
+    // Download certification
+    function downloadCertification() {
+        if (currentCertification) {
+            const link = document.createElement('a');
+            link.href = `/storage/${currentCertification}`;
+            link.download = currentCertification.split('/').pop();
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
     }
 
     // Utility function

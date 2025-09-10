@@ -14,7 +14,6 @@ class Product extends Model
         'status',
         'image',
         'sertifikasi',
-        'ulasan',
     ];
 
     public function merchant()

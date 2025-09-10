@@ -13,6 +13,7 @@ class TransactionDetail extends Model
         'quantity',
         'price',
         'status',
+        'ulasan',
     ];
 
     public function transaction()

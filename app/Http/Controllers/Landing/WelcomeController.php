@@ -15,7 +15,6 @@ class WelcomeController extends Controller
         $products = Product::with('merchant')
             ->where('status', 'active')
             ->get();
-
         // Hitung stats
         $totalTechnicians = Merchant::where('status', 'active')->count();
         $totalServices = Product::where('status', 'active')->count();

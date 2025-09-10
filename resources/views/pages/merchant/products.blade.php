@@ -34,6 +34,11 @@
                 </div>
             </div>
             <div class="flex justify-end space-x-2 mt-4">
+                @if($product->sertifikasi)
+                <button onclick="viewCertification('{{ $product->sertifikasi }}', '{{ $product->name }}')" class="text-blue-600 hover:text-blue-700 text-sm">
+                    <i class="fas fa-certificate mr-1"></i>Sertifikasi
+                </button>
+                @endif
                 <button onclick="editProduct({{ $product->id }})" class="text-blue-600 hover:text-blue-700 text-sm">
                     <i class="fas fa-edit mr-1"></i>Edit
                 </button>
@@ -145,9 +150,37 @@
     </div>
 </div>
 
+<!-- Certification Modal -->
+<div id="certificationModal" class="modal">
+    <div class="modal-content">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="certificationTitle" class="text-lg font-semibold text-gray-900">Sertifikasi Layanan</h3>
+                <button onclick="closeCertificationModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <div id="certificationContent" class="text-center">
+                <!-- Certification content will be loaded here -->
+            </div>
+
+            <div class="flex justify-end space-x-3 mt-6">
+                <button onclick="closeCertificationModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors">
+                    Tutup
+                </button>
+                <button id="downloadCertBtn" onclick="downloadCertification()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors" style="display: none;">
+                    <i class="fas fa-download mr-1"></i>Download
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 let isEditMode = false;
 let currentAction = null;
+let currentCertification = null;
 
 // Add Product Button
 document.getElementById('addProductBtn').addEventListener('click', function() {
@@ -210,26 +243,34 @@ document.getElementById('confirmAction').addEventListener('click', function() {
 document.getElementById('productForm').addEventListener('submit', function(e) {
     e.preventDefault();
 
-    const formData = {
-        name: document.getElementById('name').value,
-        description: document.getElementById('description').value,
-        price: document.getElementById('price').value,
-        status: document.getElementById('status').value
-    };
+    const formData = new FormData();
+    formData.append('name', document.getElementById('name').value);
+    formData.append('description', document.getElementById('description').value);
+    formData.append('price', document.getElementById('price').value);
+    formData.append('status', document.getElementById('status').value);
+
+    // Add certification file if selected
+    const certificationFile = document.getElementById('sertifikasi').files[0];
+    if (certificationFile) {
+        formData.append('sertifikasi', certificationFile);
+    }
 
     const url = isEditMode
         ? `/merchant/products/${document.getElementById('productId').value}`
         : '/merchant/products';
 
-    const method = isEditMode ? 'PUT' : 'POST';
+    const method = isEditMode ? 'POST' : 'POST'; // Use POST for both with _method override
+
+    if (isEditMode) {
+        formData.append('_method', 'PUT');
+    }
 
     fetch(url, {
         method: method,
         headers: {
-            'Content-Type': 'application/json',
             'X-CSRF-TOKEN': '{{ csrf_token() }}'
         },
-        body: JSON.stringify(formData)
+        body: formData
     })
     .then(response => response.json())
     .then(data => {
@@ -309,6 +350,77 @@ function deleteProduct(productId) {
             });
         }
     );
+}
+
+// View certification
+function viewCertification(certificationPath, serviceName) {
+    currentCertification = certificationPath;
+
+    // Update modal title
+    document.getElementById('certificationTitle').textContent = `Sertifikasi: ${serviceName}`;
+
+    // Get file extension
+    const fileExtension = certificationPath.split('.').pop().toLowerCase();
+    const certificationContent = document.getElementById('certificationContent');
+    const downloadBtn = document.getElementById('downloadCertBtn');
+
+    if (fileExtension === 'pdf') {
+        // Show PDF viewer
+        certificationContent.innerHTML = `
+            <div class="bg-gray-100 rounded-lg p-4 mb-4">
+                <iframe src="/storage/${certificationPath}"
+                        width="100%"
+                        height="400"
+                        style="border: none; border-radius: 8px;">
+                </iframe>
+            </div>
+            <p class="text-sm text-gray-600">Dokumen PDF - Klik download untuk menyimpan</p>
+        `;
+        downloadBtn.style.display = 'inline-block';
+    } else if (['jpg', 'jpeg', 'png'].includes(fileExtension)) {
+        // Show image viewer
+        certificationContent.innerHTML = `
+            <div class="bg-gray-100 rounded-lg p-4 mb-4">
+                <img src="/storage/${certificationPath}"
+                     alt="Sertifikasi"
+                     class="max-w-full h-auto rounded-lg shadow-sm mx-auto"
+                     style="max-height: 400px;">
+            </div>
+            <p class="text-sm text-gray-600">Dokumen Gambar - Klik download untuk menyimpan</p>
+        `;
+        downloadBtn.style.display = 'inline-block';
+    } else {
+        // Unsupported format
+        certificationContent.innerHTML = `
+            <div class="text-center py-8">
+                <i class="fas fa-file text-4xl text-gray-300 mb-4"></i>
+                <p class="text-gray-500">Format file tidak didukung untuk preview</p>
+                <p class="text-sm text-gray-400 mt-2">Klik download untuk melihat file</p>
+            </div>
+        `;
+        downloadBtn.style.display = 'inline-block';
+    }
+
+    // Show modal
+    document.getElementById('certificationModal').classList.add('show');
+}
+
+// Close certification modal
+function closeCertificationModal() {
+    document.getElementById('certificationModal').classList.remove('show');
+    currentCertification = null;
+}
+
+// Download certification
+function downloadCertification() {
+    if (currentCertification) {
+        const link = document.createElement('a');
+        link.href = `/storage/${currentCertification}`;
+        link.download = currentCertification.split('/').pop();
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
 }
 </script>
 @endsection
