@@ -14,6 +14,7 @@ class TransactionDetail extends Model
         'price',
         'status',
         'ulasan',
+        'rating',
     ];
 
     public function transaction()
@@ -29,5 +30,10 @@ class TransactionDetail extends Model
     public function cart()
     {
         return $this->belongsTo(Cart::class);
+    }
+
+    public function user()
+    {
+        return $this->hasOneThrough(User::class, Transaction::class, 'id', 'id', 'transaction_id', 'user_id');
     }
 }

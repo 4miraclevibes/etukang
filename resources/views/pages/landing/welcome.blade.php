@@ -92,6 +92,15 @@
                     </div>
                     @endif
 
+                    <!-- Reviews Button -->
+                    <div class="mb-2">
+                        <button onclick="viewProductReviews({{ $product->id }}, '{{ $product->name }}')"
+                                class="w-full py-1 px-2 bg-yellow-50 text-yellow-600 text-xs rounded-lg hover:bg-yellow-100 transition duration-200 flex items-center justify-center space-x-1">
+                            <i class="fas fa-star text-xs"></i>
+                            <span>Lihat Ulasan</span>
+                        </button>
+                    </div>
+
                     <div class="flex items-center justify-between">
                         <span class="font-bold text-green-600 text-sm">
                             Rp {{ number_format($product->price, 0, ',', '.') }}
@@ -198,6 +207,27 @@
             <button id="downloadCertBtn" onclick="downloadCertification()" class="alert-button primary" style="display: none;">
                 <i class="fas fa-download mr-1"></i>Download
             </button>
+        </div>
+    </div>
+</div>
+
+<!-- Product Reviews Modal -->
+<div id="productReviewsModal" class="custom-alert">
+    <div class="alert-content" style="width: 95%; max-width: 500px;">
+        <div class="alert-header">
+            <div class="alert-icon info">
+                <i class="fas fa-star"></i>
+            </div>
+            <div id="productReviewsTitle" class="alert-title">Ulasan Layanan</div>
+            <div id="productReviewsMessage" class="alert-message">Ulasan dari pelanggan yang telah menggunakan layanan ini</div>
+        </div>
+
+        <div id="productReviewsContent" class="p-4">
+            <!-- Reviews content will be loaded here -->
+        </div>
+
+        <div class="alert-buttons">
+            <button onclick="closeProductReviewsModal()" class="alert-button primary">Tutup</button>
         </div>
     </div>
 </div>
@@ -683,6 +713,108 @@
             link.click();
             document.body.removeChild(link);
         }
+    }
+
+    // View product reviews
+    function viewProductReviews(productId, productName) {
+        // Update modal title
+        document.getElementById('productReviewsTitle').textContent = `Ulasan: ${productName}`;
+        document.getElementById('productReviewsMessage').textContent = 'Ulasan dari pelanggan yang telah menggunakan layanan ini';
+
+        // Show loading state
+        showCustomAlert({
+            title: 'Memuat...',
+            message: 'Mohon tunggu sebentar',
+            type: 'info'
+        });
+
+        // Fetch product reviews
+        fetch(`/api/products/${productId}/reviews`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            console.log('Product reviews response status:', response.status);
+
+            if (!response.ok) {
+                return response.text().then(text => {
+                    console.log('Product reviews error response body:', text);
+                    throw new Error(`HTTP error! status: ${response.status}, body: ${text}`);
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Product reviews data:', data);
+            hideCustomAlert();
+
+            if (data.success && data.data) {
+                const reviews = data.data;
+                const content = document.getElementById('productReviewsContent');
+
+                let reviewsHtml = '';
+                if (reviews.length > 0) {
+                    reviewsHtml = reviews.map(review => {
+                        const rating = review.rating || 0;
+                        const ulasan = review.ulasan || '';
+                        const userName = review.user ? review.user.name : 'Pelanggan';
+                        const reviewDate = review.created_at ? new Date(review.created_at).toLocaleDateString('id-ID') : '';
+
+                        return `
+                            <div class="bg-gray-50 rounded-lg p-3 mb-3">
+                                <div class="flex items-center justify-between mb-2">
+                                    <h5 class="font-medium text-gray-900 text-sm">${userName}</h5>
+                                    <span class="text-xs text-gray-500">${reviewDate}</span>
+                                </div>
+                                <div class="flex items-center mb-2">
+                                    <div class="flex space-x-1">
+                                        ${[1,2,3,4,5].map(star => `
+                                            <span class="text-sm ${star <= rating ? 'text-yellow-400' : 'text-gray-300'}">★</span>
+                                        `).join('')}
+                                    </div>
+                                    <span class="ml-2 text-xs text-gray-600">${rating}/5</span>
+                                </div>
+                                ${ulasan ? `<p class="text-sm text-gray-700">${ulasan}</p>` : ''}
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    reviewsHtml = `
+                        <div class="text-center py-8">
+                            <i class="fas fa-star text-4xl text-gray-300 mb-4"></i>
+                            <p class="text-gray-500">Belum ada ulasan untuk layanan ini</p>
+                            <p class="text-sm text-gray-400 mt-2">Jadilah yang pertama memberikan ulasan!</p>
+                        </div>
+                    `;
+                }
+
+                content.innerHTML = reviewsHtml;
+                document.getElementById('productReviewsModal').classList.add('show');
+            } else {
+                showCustomAlert({
+                    title: 'Error',
+                    message: data.message || 'Gagal memuat ulasan',
+                    type: 'error'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Product reviews error details:', error);
+            hideCustomAlert();
+            showCustomAlert({
+                title: 'Error',
+                message: `Terjadi kesalahan saat memuat ulasan: ${error.message}`,
+                type: 'error'
+            });
+        });
+    }
+
+    // Close product reviews modal
+    function closeProductReviewsModal() {
+        document.getElementById('productReviewsModal').classList.remove('show');
     }
 
     // Utility function

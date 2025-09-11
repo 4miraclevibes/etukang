@@ -67,6 +67,30 @@
                             <i class="fas fa-eye mr-1"></i>
                             Detail
                         </button>
+                        @if($transaction->status === 'completed')
+                            @php
+                                $hasReview = false;
+                                foreach($transaction->transactionDetail as $detail) {
+                                    if($detail->ulasan) {
+                                        $hasReview = true;
+                                        break;
+                                    }
+                                }
+                            @endphp
+                            @if(!$hasReview)
+                            <button onclick="showReviewModal({{ $transaction->id }})"
+                                    class="flex-1 bg-yellow-100 text-yellow-700 py-2 px-3 rounded-lg text-sm font-medium hover:bg-yellow-200 transition-colors">
+                                <i class="fas fa-star mr-1"></i>
+                                Ulasan
+                            </button>
+                            @else
+                            <button onclick="viewReviews({{ $transaction->id }})"
+                                    class="flex-1 bg-green-100 text-green-700 py-2 px-3 rounded-lg text-sm font-medium hover:bg-green-200 transition-colors">
+                                <i class="fas fa-star mr-1"></i>
+                                Lihat Ulasan
+                            </button>
+                            @endif
+                        @endif
                         @if($transaction->status === 'pending')
                         <button onclick="cancelTransaction({{ $transaction->id }})"
                                 class="flex-1 bg-red-100 text-red-700 py-2 px-3 rounded-lg text-sm font-medium hover:bg-red-200 transition-colors">
@@ -358,6 +382,350 @@ function getStatusText($status) {
             });
         });
     }
+
+    // Review Functions
+    function showReviewModal(transactionId) {
+        document.getElementById('reviewTransactionId').value = transactionId;
+
+        // Show loading state
+        showCustomAlert({
+            title: 'Memuat...',
+            message: 'Mohon tunggu sebentar',
+            type: 'info'
+        });
+
+        // Get auth token
+        const authToken = '{{ Auth::user() ? Auth::user()->createToken("web-token")->plainTextToken : "" }}';
+
+        if (!authToken) {
+            hideCustomAlert();
+            showCustomAlert({
+                title: 'Error',
+                message: 'Anda harus login untuk memberikan ulasan',
+                type: 'error'
+            });
+            return;
+        }
+
+        // Fetch transaction details
+        fetch(`/api/transactions/${transactionId}`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            }
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            console.log('Response headers:', response.headers);
+
+            if (!response.ok) {
+                return response.text().then(text => {
+                    console.log('Error response body:', text);
+                    throw new Error(`HTTP error! status: ${response.status}, body: ${text}`);
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Transaction data:', data);
+            hideCustomAlert();
+
+            if (data.success && data.data) {
+                const transaction = data.data;
+                const reviewServices = document.getElementById('reviewServices');
+
+                let servicesHtml = '';
+                if (transaction.transaction_detail && transaction.transaction_detail.length > 0) {
+                    servicesHtml = transaction.transaction_detail.map(detail => `
+                        <div class="bg-gray-50 rounded-lg p-3 mb-3">
+                            <h4 class="font-medium text-gray-900 mb-2">${detail.product ? detail.product.name : 'Layanan'}</h4>
+                            <div class="space-y-2">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Rating</label>
+                                    <div class="flex space-x-1">
+                                        ${[1,2,3,4,5].map(star => `
+                                            <button type="button" onclick="setRating(${detail.id}, ${star})"
+                                                    class="star-rating text-2xl ${getStarClass(detail.id, star)}">
+                                                ★
+                                            </button>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Ulasan</label>
+                                    <textarea name="review_${detail.id}"
+                                              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                              rows="3"
+                                              placeholder="Bagikan pengalaman Anda..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    servicesHtml = '<p class="text-gray-500 text-center">Tidak ada layanan untuk diulas</p>';
+                }
+
+                // Fallback jika tidak ada transaction_detail
+                if (!transaction.transaction_detail || transaction.transaction_detail.length === 0) {
+                    servicesHtml = `
+                        <div class="bg-gray-50 rounded-lg p-3 mb-3">
+                            <h4 class="font-medium text-gray-900 mb-2">Layanan Sample</h4>
+                            <div class="space-y-2">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Rating</label>
+                                    <div class="flex space-x-1">
+                                        ${[1,2,3,4,5].map(star => `
+                                            <button type="button" onclick="setRating(1, ${star})"
+                                                    class="star-rating text-2xl ${getStarClass(1, star)}">
+                                                ★
+                                            </button>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Ulasan</label>
+                                    <textarea name="review_1"
+                                              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                              rows="3"
+                                              placeholder="Bagikan pengalaman Anda..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                reviewServices.innerHTML = servicesHtml;
+                document.getElementById('reviewModal').classList.add('show');
+            } else {
+                showCustomAlert({
+                    title: 'Error',
+                    message: data.message || 'Gagal memuat data transaksi',
+                    type: 'error'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error details:', error);
+            hideCustomAlert();
+            showCustomAlert({
+                title: 'Error',
+                message: `Terjadi kesalahan saat memuat data: ${error.message}`,
+                type: 'error'
+            });
+        });
+    }
+
+    function closeReviewModal() {
+        document.getElementById('reviewModal').classList.remove('show');
+        document.getElementById('reviewForm').reset();
+    }
+
+    function setRating(detailId, rating) {
+        // Remove all active classes for this detail
+        document.querySelectorAll(`[onclick*="setRating(${detailId}"]`).forEach(star => {
+            star.classList.remove('text-yellow-400');
+            star.classList.add('text-gray-300');
+        });
+
+        // Add active class to selected stars
+        for (let i = 1; i <= rating; i++) {
+            const star = document.querySelector(`[onclick="setRating(${detailId}, ${i})"]`);
+            if (star) {
+                star.classList.remove('text-gray-300');
+                star.classList.add('text-yellow-400');
+            }
+        }
+
+        // Store rating in hidden input
+        let ratingInput = document.getElementById(`rating_${detailId}`);
+        if (!ratingInput) {
+            ratingInput = document.createElement('input');
+            ratingInput.type = 'hidden';
+            ratingInput.id = `rating_${detailId}`;
+            ratingInput.name = `rating_${detailId}`;
+            document.getElementById('reviewForm').appendChild(ratingInput);
+        }
+        ratingInput.value = rating;
+    }
+
+    function getStarClass(detailId, star) {
+        return 'text-gray-300 hover:text-yellow-400 cursor-pointer';
+    }
+
+    function submitReviews() {
+        const transactionId = document.getElementById('reviewTransactionId').value;
+        const formData = new FormData(document.getElementById('reviewForm'));
+
+        const reviews = [];
+        const reviewInputs = document.querySelectorAll('textarea[name^="review_"]');
+
+        reviewInputs.forEach(input => {
+            const detailId = input.name.replace('review_', '');
+            const ratingInput = document.getElementById(`rating_${detailId}`);
+            const rating = ratingInput ? ratingInput.value : 0;
+            const review = input.value.trim();
+
+            if (rating > 0 || review) {
+                reviews.push({
+                    transaction_detail_id: detailId,
+                    rating: rating,
+                    review: review
+                });
+            }
+        });
+
+        if (reviews.length === 0) {
+            showCustomAlert({
+                title: 'Peringatan',
+                message: 'Silakan berikan rating atau ulasan untuk setidaknya satu layanan',
+                type: 'warning'
+            });
+            return;
+        }
+
+        fetch('/api/reviews', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Authorization': 'Bearer {{ Auth::user() ? Auth::user()->createToken("web-token")->plainTextToken : "" }}'
+            },
+            body: JSON.stringify({
+                transaction_id: transactionId,
+                reviews: reviews
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showCustomAlert({
+                    title: 'Berhasil!',
+                    message: data.message || 'Ulasan berhasil dikirim',
+                    type: 'success',
+                    onConfirm: () => {
+                        closeReviewModal();
+                        location.reload();
+                    }
+                });
+            } else {
+                showCustomAlert({
+                    title: 'Error',
+                    message: data.message || 'Gagal mengirim ulasan',
+                    type: 'error'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showCustomAlert({
+                title: 'Error',
+                message: 'Terjadi kesalahan saat mengirim ulasan',
+                type: 'error'
+            });
+        });
+    }
+
+    function viewReviews(transactionId) {
+        // Show loading state
+        showCustomAlert({
+            title: 'Memuat...',
+            message: 'Mohon tunggu sebentar',
+            type: 'info'
+        });
+
+        // Get auth token
+        const authToken = '{{ Auth::user() ? Auth::user()->createToken("web-token")->plainTextToken : "" }}';
+
+        if (!authToken) {
+            hideCustomAlert();
+            showCustomAlert({
+                title: 'Error',
+                message: 'Anda harus login untuk melihat ulasan',
+                type: 'error'
+            });
+            return;
+        }
+
+        fetch(`/api/transactions/${transactionId}/reviews`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            }
+        })
+        .then(response => {
+            console.log('Reviews response status:', response.status);
+            console.log('Reviews response headers:', response.headers);
+
+            if (!response.ok) {
+                return response.text().then(text => {
+                    console.log('Reviews error response body:', text);
+                    throw new Error(`HTTP error! status: ${response.status}, body: ${text}`);
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Reviews data:', data);
+            hideCustomAlert();
+
+            if (data.success && data.data) {
+                const reviews = data.data;
+                const content = document.getElementById('viewReviewsContent');
+
+                let reviewsHtml = '';
+                if (reviews.length > 0) {
+                    reviewsHtml = reviews.map(review => {
+                        const productName = review.product && review.product.name ? review.product.name : 'Layanan';
+                        const rating = review.rating || 0;
+                        const ulasan = review.ulasan || '';
+
+                        return `
+                            <div class="bg-gray-50 rounded-lg p-3 mb-3">
+                                <h4 class="font-medium text-gray-900 mb-2">${productName}</h4>
+                                <div class="flex items-center mb-2">
+                                    <div class="flex space-x-1">
+                                        ${[1,2,3,4,5].map(star => `
+                                            <span class="text-lg ${star <= rating ? 'text-yellow-400' : 'text-gray-300'}">★</span>
+                                        `).join('')}
+                                    </div>
+                                    <span class="ml-2 text-sm text-gray-600">${rating}/5</span>
+                                </div>
+                                ${ulasan ? `<p class="text-sm text-gray-700">${ulasan}</p>` : ''}
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    reviewsHtml = '<p class="text-gray-500 text-center">Belum ada ulasan</p>';
+                }
+
+                content.innerHTML = reviewsHtml;
+                document.getElementById('viewReviewsModal').classList.add('show');
+            } else {
+                showCustomAlert({
+                    title: 'Error',
+                    message: data.message || 'Gagal memuat ulasan',
+                    type: 'error'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Reviews error details:', error);
+            hideCustomAlert();
+            showCustomAlert({
+                title: 'Error',
+                message: `Terjadi kesalahan saat memuat ulasan: ${error.message}`,
+                type: 'error'
+            });
+        });
+    }
+
+    function closeViewReviewsModal() {
+        document.getElementById('viewReviewsModal').classList.remove('show');
+    }
 </script>
 
 <!-- Custom Alert Modal -->
@@ -373,6 +741,53 @@ function getStatusText($status) {
         <div class="alert-buttons">
             <button id="alertCancelBtn" class="alert-button secondary" style="display: none;">Batal</button>
             <button id="alertConfirmBtn" class="alert-button primary">OK</button>
+        </div>
+    </div>
+</div>
+
+<!-- Review Modal -->
+<div id="reviewModal" class="custom-alert">
+    <div class="alert-content" style="width: 95%; max-width: 500px;">
+        <div class="alert-header">
+            <div class="alert-icon warning">
+                <i class="fas fa-star"></i>
+            </div>
+            <div id="reviewTitle" class="alert-title">Berikan Ulasan</div>
+            <div id="reviewMessage" class="alert-message">Bagikan pengalaman Anda menggunakan layanan ini</div>
+        </div>
+
+        <form id="reviewForm" class="p-4 space-y-4">
+            <input type="hidden" id="reviewTransactionId" name="transaction_id">
+
+            <div id="reviewServices">
+                <!-- Review services will be loaded here -->
+            </div>
+        </form>
+
+        <div class="alert-buttons">
+            <button onclick="closeReviewModal()" class="alert-button secondary">Batal</button>
+            <button onclick="submitReviews()" class="alert-button primary">Kirim Ulasan</button>
+        </div>
+    </div>
+</div>
+
+<!-- View Reviews Modal -->
+<div id="viewReviewsModal" class="custom-alert">
+    <div class="alert-content" style="width: 95%; max-width: 500px;">
+        <div class="alert-header">
+            <div class="alert-icon info">
+                <i class="fas fa-star"></i>
+            </div>
+            <div id="viewReviewsTitle" class="alert-title">Ulasan Anda</div>
+            <div id="viewReviewsMessage" class="alert-message">Ulasan yang telah Anda berikan</div>
+        </div>
+
+        <div id="viewReviewsContent" class="p-4">
+            <!-- Reviews content will be loaded here -->
+        </div>
+
+        <div class="alert-buttons">
+            <button onclick="closeViewReviewsModal()" class="alert-button primary">Tutup</button>
         </div>
     </div>
 </div>

@@ -95,6 +95,34 @@ class TransactionController extends Controller
         });
     }
 
+    public function show($id): JsonResponse
+    {
+        try {
+            $transaction = Transaction::where('user_id', Auth::user()->id)
+                ->with(['transactionDetail.product', 'merchant', 'payment'])
+                ->find($id);
+
+            if (!$transaction) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Transaksi tidak ditemukan',
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $transaction
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Transaction show error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan server',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function update(Request $request, $id)
     {
         $transaction = Transaction::where('user_id', Auth::user()->id)->with('transactionDetail', 'payment')->find($id);

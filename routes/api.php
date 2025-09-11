@@ -8,6 +8,7 @@ use App\Http\Controllers\API\CartController;
 use App\Http\Controllers\API\MerchantController;
 use App\Http\Controllers\API\ProductController;
 use App\Http\Controllers\API\UserController;
+use App\Http\Controllers\API\ReviewController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -20,6 +21,9 @@ Route::post('payment-notification/{code}', [EdupayController::class, 'paymentNot
 Route::post('login', [UserController::class, 'login']);
 Route::post('register', [UserController::class, 'register']);
 
+// Public routes - tidak perlu authentication
+Route::get('products/{id}/reviews', [ReviewController::class, 'getProductReviews']);
+
 Route::middleware('auth:sanctum')->group(function () {
     //Carts
     Route::get('carts', [CartController::class, 'index']);
@@ -29,8 +33,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Transaction routes
     Route::post('transactions', [TransactionController::class, 'store']);
+    Route::get('transactions/{id}', [TransactionController::class, 'show']);
     Route::put('transactions/{id}', [TransactionController::class, 'update']);
     Route::delete('transactions/{id}', [TransactionController::class, 'destroy']);
+
+    // Review routes
+    Route::post('reviews', [ReviewController::class, 'store']);
+    Route::get('transactions/{id}/reviews', [ReviewController::class, 'getTransactionReviews']);
 
     //Merchants
     Route::get('merchants', [MerchantController::class, 'index']);

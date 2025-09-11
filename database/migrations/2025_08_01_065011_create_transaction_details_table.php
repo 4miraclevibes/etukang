@@ -20,6 +20,7 @@ return new class extends Migration
             $table->integer('price');
             $table->string('status')->default('pending');
             $table->string('ulasan')->nullable();
+            $table->integer('rating')->nullable();
             $table->timestamps();
         });
     }
