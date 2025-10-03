@@ -87,6 +87,8 @@ class TransactionController extends Controller
                 $transactions[] = $transaction->load('transactionDetail', 'payment');
             }
 
+            $this->sendWhatsappNotification($transaction);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Transaksi berhasil dibuat',
@@ -221,5 +223,72 @@ class TransactionController extends Controller
 
             return null;
         }
+    }
+
+    private function sendWhatsappNotification($transaction)
+    {
+
+        // Kata-kata intro
+        $intro = [
+            "Ada order baru nih",
+            "Pesanan layanan masuk",
+            "Ada job baru",
+            "Layanan baru nih",
+            "Ada order teknisi"
+        ];
+
+        // Pilih secara random
+        $selectedIntro = $intro[array_rand($intro)];
+        $selectedMerchant = $transaction->merchant->name;
+
+        // Load transaction dengan relasi yang diperlukan
+        $transaction = $transaction->load(['user', 'merchant', 'transactionDetail.product', 'payment']);
+
+        // Format pesan WhatsApp
+        $message = "🔧 *ORDER LAYANAN BARU!*\n\n"
+            . "*{$selectedIntro}!*\n\n"
+            . "Kode Transaksi: *{$transaction->payment->payment_code}*\n"
+            . "Merchant: *{$selectedMerchant}*\n"
+            . "Customer: *{$transaction->user->name}*\n"
+            . "Total Pembayaran: *Rp " . number_format($transaction->total_price, 0, ',', '.') . "*\n"
+            . "Status: *{$transaction->status}*\n\n"
+            . "*Detail Layanan:*\n";
+
+        // Tambahkan detail layanan
+        foreach ($transaction->transactionDetail as $detail) {
+            $message .= "- {$detail->product->name}\n"
+                . "  Jumlah: {$detail->quantity} x Rp " . number_format($detail->price, 0, ',', '.') . "\n"
+                . "  Total: Rp " . number_format($detail->price * $detail->quantity, 0, ',', '.') . "\n\n";
+        }
+
+        $message .= "*Informasi Pembayaran:*\n"
+            . "Metode: *{$transaction->payment->payment_method}*\n"
+            . "Status Pembayaran: *{$transaction->payment->payment_status}*\n\n"
+            . "⏰ *Segera proses pesanan ini!*\n"
+            . "📞 Hubungi customer untuk konfirmasi jadwal layanan.";
+
+        $curl = curl_init();
+
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => 'https://api.fonnte.com/send',
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 0,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => 'POST',
+            CURLOPT_POSTFIELDS => array(
+                'target' => '6285171742037, 6282286260693, 6285157950330, 6282287444224, 6281337703252',
+                'message' => $message
+            ),
+            CURLOPT_HTTPHEADER => array(
+                'Authorization: BehwfEMKPuLsQByWe138'
+            ),
+        ));
+
+        $response = curl_exec($curl);
+        curl_close($curl);
+        return $response;
     }
 }
