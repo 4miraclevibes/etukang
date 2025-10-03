@@ -279,7 +279,7 @@ class TransactionController extends Controller
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
             CURLOPT_CUSTOMREQUEST => 'POST',
             CURLOPT_POSTFIELDS => array(
-                'target' => '6285171742037, 6282286260693, 6285157950330, 6282287444224, 6281337703252',
+                'target' => '6281261686210',
                 'message' => $message
             ),
             CURLOPT_HTTPHEADER => array(
