@@ -10,6 +10,14 @@ class TransactionController extends Controller
 {
     public function index()
     {
+        // Update transactions yang pending lebih dari 24 jam menjadi cancelled
+        $twentyFourHoursAgo = now()->subHours(24);
+
+        Transaction::where('user_id', Auth::id())
+            ->where('status', 'pending')
+            ->where('created_at', '<', $twentyFourHoursAgo)
+            ->update(['status' => 'cancelled']);
+
         $transactions = Transaction::with(['merchant', 'transactionDetail.product', 'payment'])
             ->where('user_id', Auth::id())
             ->orderBy('created_at', 'desc')

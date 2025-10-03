@@ -42,7 +42,7 @@ class CartController extends Controller
             'merchant_id' => $merchant->id,
             'product_id' => $request->product_id,
             'quantity' => $request->quantity,
-            'price' => $request->price * $request->quantity,
+            'price' => $request->price,
         ]);
 
         return response()->json([
@@ -78,7 +78,7 @@ class CartController extends Controller
 
         $cart->update([
             'quantity' => $request->quantity,
-            'price' => $cart->product->price * $request->quantity,
+            'price' => $cart->product->price,
         ]);
 
         // Refresh cart data dari database
