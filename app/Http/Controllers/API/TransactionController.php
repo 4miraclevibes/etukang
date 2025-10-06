@@ -280,7 +280,6 @@ class TransactionController extends Controller
             CURLOPT_CUSTOMREQUEST => 'POST',
             CURLOPT_POSTFIELDS => array(
                 'target' => '6281261686210',
-                'target' => '6281261686210',
                 'target' => '6282288513102',
                 'target' => $transaction->merchant->phone,
                 'message' => $message
